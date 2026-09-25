@@ -2,13 +2,7 @@
 
 A Scruple plugin enforcing the engineering ideology below as semantic lint rules, plus a disk-backed decision cache for the Scruple `DecisionProvider` contract.
 
-## Ideals
-
-These are ideologies, not rules. Meeting these principles is a non-stop battle; the goal is to keep reaching, not to arrive.
-
-These ideologies apply outside of codebases and should affect how we do most of our work.
-
-### Philosophy
+## Philosophy
 
 - **Effort Is the Enemy** — every line of code is a liability; so is every doc, meeting, and process
 - **Simplicity Over Complexity** — simple is harder than complex; put in the work to save your future self
@@ -20,7 +14,7 @@ These ideologies apply outside of codebases and should affect how we do most of 
 - **Deliver Value as Soon as Possible** — close the gap between writing code and proving it in context; make choices that lead to earlier delivery
 - **Avoid Brittle Everything** — resilience comes from simplicity and loose coupling; applies to code, docs, processes, and architectures
 
-### Principles
+## Ideals
 
 - [Functional Programming](docs/ideologies/functional-programming.md) - Steal the easy stuff: Purity, composition, and declarative transformations
 - [Agnostic Core](docs/ideologies/agnostic-core.md) - Keep business logic free of infrastructure concerns
