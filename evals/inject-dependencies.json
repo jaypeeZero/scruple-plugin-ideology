@@ -1,0 +1,209 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/inject-dependencies": {
+      "finding": "constructs_collaborator_internally",
+      "safe": "constructs_plain_value"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-obvious",
+      "filename": "src/services/reportService.ts",
+      "source": "import { HttpMailClient } from './mail.js'\nimport { config } from './config.js'\n\ninterface Report { subject: string; body: string }\n\nexport class ReportService {\n  async send(report: Report): Promise<void> {\n    const client = new HttpMailClient(config.smtpUrl)\n    await client.deliver(report.subject, report.body)\n  }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "The method constructs its own HttpMailClient collaborator on every call instead of receiving it once through the class.",
+      "tags": [
+        "violation",
+        "method"
+      ]
+    },
+    {
+      "id": "violation-factory-call",
+      "filename": "src/services/orders.ts",
+      "source": "import { createConnection } from './db.js'\nimport { config } from './config.js'\n\ninterface Order { id: string; total: number }\n\nexport const listOrders = async (customerId: string): Promise<Order[]> => {\n  const db = createConnection(config.databaseUrl)\n  const rows = await db.query('select id, total from orders where customer_id = $1', [customerId])\n  return rows.map((row) => ({ id: row.id, total: Number(row.total) }))\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "createConnection(...) builds a database connection collaborator inside the function instead of the function receiving one.",
+      "tags": [
+        "violation",
+        "factory-call"
+      ]
+    },
+    {
+      "id": "violation-axios-create",
+      "filename": "src/services/weatherClient.ts",
+      "source": "import axios from 'axios'\n\ninterface Weather { tempC: number }\n\nexport const fetchWeather = async (city: string): Promise<Weather> => {\n  const http = axios.create({ baseURL: 'https://weather.example.com', timeout: 2000 })\n  const response = await http.get(`/current/${city}`)\n  return { tempC: response.data.temp_c }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "axios.create(...) builds an HTTP client collaborator inside the function instead of the function receiving a pre-configured client.",
+      "tags": [
+        "violation",
+        "factory-call"
+      ]
+    },
+    {
+      "id": "violation-lazy-this",
+      "filename": "src/services/profileLookup.ts",
+      "source": "import { RedisCache } from './cache.js'\n\nexport class ProfileLookup {\n  #cache: RedisCache | undefined\n\n  async find(userId: string): Promise<string | null> {\n    this.#cache ??= new RedisCache('redis://localhost:6379')\n    return this.#cache.get(`profile:${userId}`)\n  }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "The lazy `??=` assignment constructs a RedisCache collaborator on first use instead of receiving one through the constructor.",
+      "tags": [
+        "violation",
+        "lazy-init"
+      ]
+    },
+    {
+      "id": "violation-self-wiring-constructor",
+      "filename": "src/services/petService.ts",
+      "source": "import { PostgresPetRepository } from './petRepository.js'\nimport { pool } from './pool.js'\n\ninterface Pet { name: string }\n\nexport class PetService {\n  readonly #repository: PostgresPetRepository\n\n  constructor() {\n    this.#repository = new PostgresPetRepository(pool)\n  }\n\n  findByName(name: string): Promise<Pet | null> {\n    return this.#repository.findByName(name)\n  }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "The constructor builds its own PostgresPetRepository from a shared pool instead of receiving the repository as a parameter, so it constructs a collaborator internally.",
+      "tags": [
+        "violation",
+        "constructor"
+      ]
+    },
+    {
+      "id": "violation-inline-import",
+      "filename": "src/services/billing.ts",
+      "source": "interface Invoice { id: string; amountCents: number }\n\nexport const chargeInvoice = async (invoice: Invoice): Promise<string> => {\n  const { StripeClient } = await import('./stripe.js')\n  const stripe = new StripeClient(process.env['STRIPE_KEY'] ?? '')\n  const charge = await stripe.charge(invoice.amountCents)\n  return charge.id\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "The function dynamically imports and then constructs a StripeClient itself, wiring its own payment collaborator instead of receiving one.",
+      "tags": [
+        "violation",
+        "inline-import"
+      ]
+    },
+    {
+      "id": "logger-created-in-function",
+      "filename": "src/jobs/runJob.ts",
+      "source": "import { createLogger } from './logging.js'\n\ninterface Job { id: string }\n\nexport const runJob = async (job: Job): Promise<void> => {\n  const log = createLogger({ job: job.id })\n  log.info('starting')\n  await new Promise((resolve) => setTimeout(resolve, 10))\n  log.info('finished')\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "createLogger({ job }) builds a logging collaborator inside the function instead of the function receiving a logger.",
+      "tags": [
+        "violation",
+        "ambiguous",
+        "logger"
+      ]
+    },
+    {
+      "id": "abort-controller-and-promise",
+      "filename": "src/util/withTimeout.ts",
+      "source": "export const withTimeout = <T>(work: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> => {\n  const controller = new AbortController()\n  const timer = setTimeout(() => controller.abort(), ms)\n  return new Promise<T>((resolve, reject) => {\n    work(controller.signal).then(resolve, reject).finally(() => clearTimeout(timer))\n  })\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": true,
+      "expected_choice": "constructs_collaborator_internally",
+      "rationale": "AbortController coordinates cancellation with behaviour of its own, so constructing it inside the function is treated as building a collaborator rather than a plain value.",
+      "tags": [
+        "violation",
+        "ambiguous",
+        "platform-type"
+      ]
+    },
+    {
+      "id": "ok-factory-function",
+      "filename": "src/services/petServiceFactory.ts",
+      "source": "import { PetService } from './petService.js'\nimport type { PetRepository } from './petRepository.js'\nimport type { PetClient } from './petClient.js'\n\nexport const createPetService = (repository: PetRepository, client: PetClient): PetService =>\n  new PetService(repository, client)\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "returns_constructed_object",
+      "rationale": "The function receives its collaborators as parameters and its only construction is the PetService it returns, so it is itself a factory rather than a violation.",
+      "tags": [
+        "safe",
+        "factory-function"
+      ]
+    },
+    {
+      "id": "ok-injected-collaborator",
+      "filename": "src/services/reportService.ts",
+      "source": "import type { MailClient } from './mail.js'\n\ninterface Report { subject: string; body: string }\n\nexport class ReportService {\n  readonly #mail: MailClient\n\n  constructor(mail: MailClient) {\n    this.#mail = mail\n  }\n\n  async send(report: Report): Promise<void> {\n    const envelope = new Map([['subject', report.subject], ['body', report.body]])\n    await this.#mail.deliver(Object.fromEntries(envelope))\n  }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "constructs_plain_value",
+      "rationale": "The mail client is injected through the constructor; the only construction inside the method is a plain Map value, not a collaborator.",
+      "tags": [
+        "safe",
+        "injected-collaborator"
+      ]
+    },
+    {
+      "id": "ok-plain-values",
+      "filename": "src/services/summarise.ts",
+      "source": "interface Event { name: string; at: Date }\n\nexport const summarise = (events: Event[]): Map<string, number> => {\n  const counts = new Map<string, number>()\n  const cutoff = new Date(Date.now() - 86_400_000)\n  for (const event of events) {\n    if (event.at < cutoff) continue\n    counts.set(event.name, (counts.get(event.name) ?? 0) + 1)\n  }\n  if (counts.size === 0) throw new Error('no recent events')\n  return counts\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "constructs_plain_value",
+      "rationale": "The function only constructs a Map, a Date, and an Error, all plain data rather than collaborators with behaviour.",
+      "tags": [
+        "safe",
+        "plain-values"
+      ]
+    },
+    {
+      "id": "ok-value-object-with-methods",
+      "filename": "src/services/total.ts",
+      "source": "import { Money } from './money.js'\n\ninterface LineItem { unitCents: number; quantity: number }\n\nexport const total = (items: LineItem[]): Money => {\n  let sum = new Money(0, 'USD')\n  for (const item of items) {\n    sum = sum.plus(new Money(item.unitCents * item.quantity, 'USD'))\n  }\n  return sum\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "constructs_plain_value",
+      "rationale": "Money is an immutable value object constructed and combined as data, not a collaborator the function depends on.",
+      "tags": [
+        "safe",
+        "value-object"
+      ]
+    },
+    {
+      "id": "ok-platform-types",
+      "filename": "src/util/parseCallback.ts",
+      "source": "export const parseCallback = (raw: string): { host: string; code: string | null } => {\n  const url = new URL(raw)\n  const bytes = new TextEncoder().encode(url.pathname)\n  const code = bytes.length > 0 ? url.searchParams.get('code') : null\n  return { host: url.host, code }\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "constructs_plain_value",
+      "rationale": "URL and TextEncoder are built-in platform types used to parse data in place, not collaborators the function depends on.",
+      "tags": [
+        "safe",
+        "platform-type"
+      ]
+    },
+    {
+      "id": "ok-create-hash-utility",
+      "filename": "src/util/fingerprint.ts",
+      "source": "import { createHash } from 'node:crypto'\n\nexport const fingerprint = (payload: string): string =>\n  createHash('sha256').update(payload).digest('hex')\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "constructs_plain_value",
+      "rationale": "A Hash is a single-use value utility built and consumed inline in one expression, and the community constructs it this way rather than injecting it.",
+      "tags": [
+        "safe",
+        "platform-type",
+        "create-hash"
+      ]
+    },
+    {
+      "id": "composition-root",
+      "filename": "src/index.ts",
+      "source": "import { HttpMailClient } from './mail.js'\nimport { ReportService } from './ok-injected-collaborator.js'\nimport { config } from './config.js'\n\nexport const reportService = new ReportService(new HttpMailClient(config.smtpUrl))\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The file is a composition root wiring collaborators at the top level outside any function, so the rule produces no candidates at all.",
+      "tags": [
+        "safe",
+        "composition-root"
+      ]
+    }
+  ]
+}

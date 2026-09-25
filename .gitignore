@@ -1,1 +1,3 @@
 .gitconfig
+node_modules
+dist

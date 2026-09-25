@@ -1,0 +1,214 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-hidden-state": {
+      "finding": "reads_or_writes_hidden_state",
+      "safe": "references_immutable_constant"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-counter",
+      "filename": "src/services/hitCounter.ts",
+      "source": "let hitCount = 0\n\nexport const recordHit = (): number => {\n  hitCount += 1\n  return hitCount\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The function increments and reads a module-level let that is not passed in, so its result depends on hidden state.",
+      "tags": [
+        "violation",
+        "counter"
+      ]
+    },
+    {
+      "id": "violation-array-registry",
+      "filename": "src/services/listenerRegistry.ts",
+      "source": "const listeners = []\n\nexport const addListener = (listener) => {\n  listeners.push(listener)\n  return listeners\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The function mutates a module-level array by pushing into it and returns that shared array as its result.",
+      "tags": [
+        "violation",
+        "array"
+      ]
+    },
+    {
+      "id": "violation-object-mutation",
+      "filename": "src/services/featureFlags.ts",
+      "source": "const flagState = { enabled: false }\n\nexport const enableFeature = () => {\n  flagState.enabled = true\n  return flagState.enabled\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The function mutates a field on a module-level object instead of receiving and returning a new value.",
+      "tags": [
+        "violation",
+        "object"
+      ]
+    },
+    {
+      "id": "violation-map-registry",
+      "filename": "src/services/sessionRegistry.ts",
+      "source": "const sessions = new Map()\n\nexport const touchSession = (sessionId) => {\n  const count = (sessions.get(sessionId) ?? 0) + 1\n  sessions.set(sessionId, count)\n  return count\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The module-level Map is used as a registry whose stored counts change on every call, so the function's result depends on and changes shared state.",
+      "tags": [
+        "violation",
+        "map"
+      ]
+    },
+    {
+      "id": "violation-reassigned-config",
+      "filename": "src/services/runtimeConfig.ts",
+      "source": "let activeRegion = 'us-east'\n\nexport const setRegion = (region) => {\n  activeRegion = region\n}\n\nexport const currentRegion = () => activeRegion\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_candidates": 2,
+      "rationale": "setRegion reassigns a module-level let at runtime, changing what every other function that reads activeRegion sees. Both setRegion and currentRegion reference the binding, so the rule produces one candidate per function.",
+      "tags": [
+        "violation",
+        "reassignment"
+      ],
+      "expected_choices": [
+        "reads_or_writes_hidden_state",
+        "reads_or_writes_hidden_state"
+      ]
+    },
+    {
+      "id": "violation-toggled-elsewhere",
+      "filename": "src/services/maintenanceMode.ts",
+      "source": "let maintenanceMode = false\n\nexport const setMaintenanceMode = (value) => {\n  maintenanceMode = value\n}\n\nexport const isUnderMaintenance = () => {\n  return maintenanceMode\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_candidates": 2,
+      "rationale": "isUnderMaintenance's result depends on a module-level let that a different function toggles, so it reads hidden state even though it never writes it. Both setMaintenanceMode and isUnderMaintenance reference the binding, so the rule produces one candidate per function.",
+      "tags": [
+        "violation",
+        "toggle"
+      ],
+      "expected_choices": [
+        "reads_or_writes_hidden_state",
+        "reads_or_writes_hidden_state"
+      ]
+    },
+    {
+      "id": "ok-primitive-constant",
+      "filename": "src/services/clamp.ts",
+      "source": "const MAX_RETRIES = 3\n\nexport const clampRetries = (attempts) => {\n  return attempts > MAX_RETRIES ? MAX_RETRIES : attempts\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_choice": "references_immutable_constant",
+      "rationale": "MAX_RETRIES is a fixed numeric constant that is only ever read, never reassigned or mutated.",
+      "tags": [
+        "safe",
+        "primitive-constant"
+      ]
+    },
+    {
+      "id": "ok-frozen-lookup-table",
+      "filename": "src/services/statusLabels.ts",
+      "source": "const STATUS_LABELS = Object.freeze({ open: 'Open', closed: 'Closed' })\n\nexport const labelFor = (status) => {\n  return STATUS_LABELS[status] ?? 'Unknown'\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_choice": "references_immutable_constant",
+      "rationale": "The lookup table is frozen and only read, so it behaves as a fixed constant rather than mutable shared state.",
+      "tags": [
+        "safe",
+        "lookup-table"
+      ]
+    },
+    {
+      "id": "ok-shared-regex",
+      "filename": "src/services/emailValidator.ts",
+      "source": "const EMAIL_PATTERN = /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/\n\nexport const isValidEmail = (value) => {\n  return EMAIL_PATTERN.test(value)\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_choice": "references_immutable_constant",
+      "rationale": "The module-level regex is a fixed pattern reused across calls and never mutated.",
+      "tags": [
+        "safe",
+        "regex"
+      ]
+    },
+    {
+      "id": "ok-config-object-read-only",
+      "filename": "src/services/apiClient.ts",
+      "source": "const apiConfig = { baseUrl: 'https://api.example.test', timeoutMs: 5000 }\n\nexport const describeEndpoint = (path) => {\n  return `${apiConfig.baseUrl}${path} (timeout ${apiConfig.timeoutMs}ms)`\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_choice": "references_immutable_constant",
+      "rationale": "The config object's fields are only read to build a string; nothing in the function reassigns or mutates apiConfig.",
+      "tags": [
+        "safe",
+        "config-object"
+      ]
+    },
+    {
+      "id": "violation-memo-cache",
+      "filename": "src/services/squareMemo.ts",
+      "source": "const memo = new Map()\n\nexport const square = (value) => {\n  if (memo.has(value)) return memo.get(value)\n  const result = value * value\n  memo.set(value, result)\n  return result\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The Map is module-level state written on a miss and read on a hit; a cache is a deliberate exception to the rule, recorded with an inline suppression, not something the rule allows.",
+      "tags": [
+        "violation",
+        "memoization"
+      ]
+    },
+    {
+      "id": "violation-memo-returns-stored-object",
+      "filename": "src/services/userProfileCache.ts",
+      "source": "const profileCache = new Map()\n\nexport const getProfile = (userId, load) => {\n  if (profileCache.has(userId)) return profileCache.get(userId)\n  const profile = load(userId)\n  profileCache.set(userId, profile)\n  return profile\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "The Map is module-level state that changes with every miss and decides what later calls return; caching is an exception to the rule, recorded with an inline suppression.",
+      "tags": [
+        "violation",
+        "memoization"
+      ]
+    },
+    {
+      "id": "ambiguous-lazy-singleton",
+      "filename": "src/services/defaultLogger.ts",
+      "source": "let defaultLogger\n\nconst buildLogger = () => ({ log: (message) => message })\n\nexport const getDefaultLogger = () => {\n  defaultLogger ??= buildLogger()\n  return defaultLogger\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": true,
+      "expected_choice": "reads_or_writes_hidden_state",
+      "rationale": "getDefaultLogger both writes the module-level let on first call and reads it on every call, and the singleton it hands back is the same shared instance no caller chose to inject; that is hidden state, not a pure cache of one function's own computation.",
+      "tags": [
+        "ambiguous",
+        "lazy-singleton"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/hitCounter.spec.ts",
+      "source": "let hitCount = 0\n\nexport const recordHit = () => {\n  hitCount += 1\n  return hitCount\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    },
+    {
+      "id": "ok-unreferenced-module-state",
+      "filename": "src/services/greeter.ts",
+      "source": "let callCount = 0\n\nexport const greet = (name) => {\n  return `hello ${name}`\n}\n",
+      "rule_id": "ideology/no-hidden-state",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "greet never references the module-level callCount binding, so the function has no hidden-state candidate at all.",
+      "tags": [
+        "safe",
+        "unreferenced"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,278 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/translate-at-boundary": {
+      "finding": "mixes_decoding_with_domain_logic",
+      "safe": "only_translates"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-parseint-age-eligibility",
+      "filename": "src/pets/adoptionEligibility.ts",
+      "source": "export const isEligibleAge = (query: { age: string }): boolean => {\n  const age = parseInt(query.age, 10)\n  return age >= 1 && age <= 12\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The function decodes a query-string age with parseInt and then applies an eligibility rule to it in the same body.",
+      "tags": [
+        "violation",
+        "query-string"
+      ]
+    },
+    {
+      "id": "violation-json-parse-then-total",
+      "filename": "src/billing/orderTotal.ts",
+      "source": "export const totalFromRawBody = (raw: string): number => {\n  const body = JSON.parse(raw)\n  return body.items.reduce((sum: number, item: { price: number }) => sum + item.price, 0)\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The function decodes a raw JSON body and then computes a domain total from it in the same body.",
+      "tags": [
+        "violation",
+        "json"
+      ]
+    },
+    {
+      "id": "ok-handler-reads-payload-and-delegates",
+      "filename": "src/pets/adoptPetHandler.ts",
+      "source": "export const adoptFromRequest = (request: { payload: { petId: string } }): Adoption => {\n  const petId = request.payload.petId\n  return adopt(petId)\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "Reading one payload field and handing the typed value to the domain is exactly what a handler does; the business effect lives in adopt, not here.",
+      "tags": [
+        "safe",
+        "handler",
+        "delegation"
+      ]
+    },
+    {
+      "id": "violation-row-mapping-with-discount",
+      "filename": "src/billing/customerRow.ts",
+      "source": "interface CustomerRow { first_name: string; total: string; loyalty_years: number }\ninterface CustomerTable { findOne: (id: string) => Promise<CustomerRow | null> }\n\nexport const customerTotalWithDiscount = async (customers: CustomerTable, id: string): Promise<number> => {\n  const row = await customers.findOne(id)\n  if (row === null) return 0\n  const total = Number(row.total)\n  return row.loyalty_years >= 5 ? total * 0.9 : total\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The function fetches a storage row, decodes its string total, and applies the loyalty discount rule in the same body instead of mapping the row first and letting a separate function decide the discount.",
+      "tags": [
+        "violation",
+        "database-row"
+      ]
+    },
+    {
+      "id": "violation-date-parse-then-expired",
+      "filename": "src/pets/adoptionExpiry.ts",
+      "source": "export const isExpired = (response: { adoptedAt: string }): boolean => {\n  const adoptedAt = Date.parse(response.adoptedAt)\n  return Date.now() - adoptedAt > 1000 * 60 * 60 * 24 * 30\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The function decodes an API date string with Date.parse and then decides expiry against it in the same body.",
+      "tags": [
+        "violation",
+        "date"
+      ]
+    },
+    {
+      "id": "violation-joi-validate-then-branch",
+      "filename": "src/http/petPayloadValidation.ts",
+      "source": "import Joi from 'joi'\n\nconst schema = Joi.object({ age: Joi.number().required() })\n\nexport const acceptOrRejectPet = (payload: unknown): string => {\n  const { value, error } = schema.validate(payload)\n  return error ? 'rejected' : value.age >= 1 ? 'accepted' : 'too-young'\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The function validates a raw payload with Joi and then branches on the validated value's business meaning in the same body.",
+      "tags": [
+        "violation",
+        "schema-validation"
+      ]
+    },
+    {
+      "id": "ok-to-pet-mapper",
+      "filename": "src/pets/petMapper.ts",
+      "source": "interface PetRow { first_name: string; last_name: string }\n\nexport const toPet = (row: PetRow): { firstName: string; lastName: string } => {\n  return { firstName: row.first_name, lastName: row.last_name }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The function's whole job is mapping a database row shape into a typed object; it applies no business rule.",
+      "tags": [
+        "safe",
+        "mapper"
+      ]
+    },
+    {
+      "id": "ok-handler-delegates-to-service",
+      "filename": "src/pets/petHandler.ts",
+      "source": "export const handleAdopt = (request: { payload: { petId: string } }, adoptionService: { adopt: (petId: string) => Adoption }): Adoption => {\n  const petId = request.payload.petId\n  return adoptionService.adopt(petId)\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The handler extracts the typed value from the payload and passes it straight to an injected service, returning that service's result unchanged; the business decision lives in the service, not here.",
+      "tags": [
+        "safe",
+        "handler"
+      ]
+    },
+    {
+      "id": "ok-format-date-output",
+      "filename": "src/lib/formatDate.ts",
+      "source": "export const formatDate = (date: Date): string => {\n  const isoDate = date.toISOString().slice(0, 10)\n  return isoDate\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "A typed Date formatted into a string never touches a parse call or an external-shape word, so the function never enters the prefilter at all.",
+      "tags": [
+        "safe",
+        "output-formatting"
+      ]
+    },
+    {
+      "id": "ok-parse-money-decoder",
+      "filename": "src/billing/parseMoney.ts",
+      "source": "interface Money { cents: number }\n\nexport const parseMoney = (raw: string): Money => {\n  return { cents: Math.round(Number(raw) * 100) }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The function only decodes a string-encoded amount into a typed Money value; it applies no business rule.",
+      "tags": [
+        "safe",
+        "decoder"
+      ]
+    },
+    {
+      "id": "ok-to-response-serializer",
+      "filename": "src/http/petResponse.ts",
+      "source": "interface Pet { id: string; name: string }\n\nexport const toResponse = (pet: Pet): { id: string; name: string } => {\n  return { id: pet.id, name: pet.name }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "A typed object literal returned unchanged never touches a parse call or an external-shape word, so the function never enters the prefilter at all.",
+      "tags": [
+        "safe",
+        "serializer"
+      ]
+    },
+    {
+      "id": "ok-fullname-split-is-translation",
+      "filename": "src/pets/ownerName.ts",
+      "source": "export const splitFullName = (fullName: string): { firstName: string; lastName: string } => {\n  const [firstName, lastName] = fullName.split(' ')\n  return { firstName, lastName }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "Splitting a string into a structured name converts one representation into another and returns it; no business rule is applied, so it is translation whichever label the model prefers over domain values.",
+      "tags": [
+        "safe",
+        "translation",
+        "string"
+      ]
+    },
+    {
+      "id": "ok-money-arithmetic",
+      "filename": "src/billing/moneyTotal.ts",
+      "source": "interface Money { cents: number }\n\nexport const total = (amounts: Money[]): Money => {\n  return { cents: amounts.reduce((sum, amount) => sum + amount.cents, 0) }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "amounts is already a typed array of Money domain values summed by a plainly named accumulator; nothing in the function touches a parse call or an external-shape word, so it never enters the prefilter at all.",
+      "tags": [
+        "safe",
+        "arithmetic"
+      ]
+    },
+    {
+      "id": "ok-compare-enum-values",
+      "filename": "src/pets/adoptionStatus.ts",
+      "source": "enum Status { Available, Adopted }\n\nexport const matchesStatus = (order: { status: Status }, filter: { status: Status }): boolean => {\n  return order.status === filter.status\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Both order.status and filter.status are already typed Status enum values, and neither parameter name nor body touches a parse call or an external-shape word, so the function never enters the prefilter at all.",
+      "tags": [
+        "safe",
+        "enum-comparison"
+      ]
+    },
+    {
+      "id": "ambiguous-payment-amount-string-threshold",
+      "filename": "src/billing/paymentThreshold.ts",
+      "source": "export const requiresReview = (payment: { amount: string }): boolean => {\n  const amount = Number(payment.amount)\n  return amount > 10000\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "payment.amount is declared string on the parameter, so converting it with Number here is decoding a text-encoded value, and the function then applies a business threshold to the result in the same body.",
+      "tags": [
+        "ambiguous",
+        "string-typed-field"
+      ]
+    },
+    {
+      "id": "ok-config-reader-validates-and-throws",
+      "filename": "src/conf/maxRetriesConfig.ts",
+      "source": "export const readMaxRetries = (env: Record<string, string | undefined>): number => {\n  const maxRetries = Number(env.MAX_RETRIES)\n  if (!Number.isInteger(maxRetries) || maxRetries <= 0) {\n    throw new Error(`MAX_RETRIES must be a positive integer, received: \"${env.MAX_RETRIES}\"`)\n  }\n  return maxRetries\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The function decodes a string-encoded environment variable with Number and validates it, throwing when malformed; validating and rejecting malformed input is part of translating, not a business rule.",
+      "tags": [
+        "safe",
+        "config-reader"
+      ]
+    },
+    {
+      "id": "ok-request-id-plumbing",
+      "filename": "src/http/requestIdPlumbing.ts",
+      "source": "export const attachRequestId = (request: { headers: Record<string, string | undefined>; app: { requestId?: string } }, generateId: () => string, log: { debug: (message: string, meta: unknown) => void }): string => {\n  const suppliedRequestId = request.headers['x-request-id']\n  request.app.requestId = suppliedRequestId ?? generateId()\n  if (!suppliedRequestId) {\n    log.debug('Generated X-Request-Id; caller sent none', { requestId: request.app.requestId })\n  }\n  return 'continue'\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The function reads a request header, generates and propagates a request id when the caller sent none, and logs once; generating and propagating ids and logging are part of translating, not a business rule.",
+      "tags": [
+        "safe",
+        "request-plumbing"
+      ]
+    },
+    {
+      "id": "ok-controller-delegates-and-maps-not-found",
+      "filename": "src/http/petUpdateController.ts",
+      "source": "export const updatePet = async (input: { payload: { name: string } }, petService: { update: (payload: { name: string }) => Promise<Pet | null> }, notFound: (message: string) => Error): Promise<Pet> => {\n  const updated = await petService.update(input.payload)\n  if (updated === null) {\n    throw notFound('No pet found')\n  }\n  return updated\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_choice": "only_translates",
+      "rationale": "The function passes the typed payload straight to an injected service and, on a null result, throws an injected not-found error; delegating to an injected collaborator and converting an absent result into an error are both part of translating, not a business rule.",
+      "tags": [
+        "safe",
+        "controller-delegation"
+      ]
+    },
+    {
+      "id": "violation-repository-selects-routing-team",
+      "filename": "src/repositories/teamMappingRepository.ts",
+      "source": "interface ExternalTeamRow { id: string; is_routing: boolean }\ninterface MappingRow { group_name: string; externalTeams: ExternalTeamRow[] }\ninterface Mapping { groupName: string; externalTeams: Array<{ id: string; isRouting: boolean }> }\ninterface MappingTable { findOne: (options: { where: { group_name: string }; include: string }) => Promise<MappingRow | null> }\n\nconst toMapping = (row: MappingRow): Mapping => ({\n  groupName: row.group_name,\n  externalTeams: row.externalTeams.map(team => ({ id: team.id, isRouting: team.is_routing }))\n})\n\nexport class PostgresMappingRepository {\n  readonly #table: MappingTable\n\n  constructor (table: MappingTable) {\n    this.#table = table\n  }\n\n  // A mapping may name several external teams; work is filed against the one marked\n  // as routing, which the schema allows only one of.\n  async matchGroupToExternalId (groupName: string): Promise<string | null> {\n    const row = await this.#table.findOne({ where: { group_name: groupName }, include: \"externalTeams\" })\n    if (row === null) {\n      return null\n    }\n    return toMapping(row).externalTeams.find(team => team.isRouting)?.id ?? null\n  }\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": true,
+      "expected_choice": "mixes_decoding_with_domain_logic",
+      "rationale": "The repository method fetches and maps the storage row, then decides which of several teams the work is filed against; that selection is a business rule living inside the storage adapter.",
+      "tags": [
+        "violation",
+        "repository-selection"
+      ],
+      "expected_candidates": 2,
+      "expected_choices": [
+        "only_translates",
+        "mixes_decoding_with_domain_logic"
+      ]
+    },
+    {
+      "id": "test-double-file",
+      "filename": "src/pets/petServiceFakes.ts",
+      "source": "export const parsePetPayload = (raw: string): unknown => {\n  return JSON.parse(raw)\n}\n",
+      "rule_id": "ideology/translate-at-boundary",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

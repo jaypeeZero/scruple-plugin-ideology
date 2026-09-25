@@ -1,0 +1,228 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/prefer-declarative-transformation": {
+      "finding": "loop_is_disguised_transformation",
+      "safe": "loop_performs_effects"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-filter-active-pets",
+      "filename": "src/pets/activePets.ts",
+      "source": "interface Pet { id: string; active: boolean }\n\nexport const activePets = (pets: Pet[]): Pet[] => {\n  const result: Pet[] = []\n  for (const pet of pets) {\n    if (pet.active) {\n      result.push(pet)\n    }\n  }\n  return result\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The loop pushes each active pet into an array declared before the loop with no early exit, which a single filter call would express directly.",
+      "tags": [
+        "violation",
+        "filter"
+      ]
+    },
+    {
+      "id": "violation-map-pet-names",
+      "filename": "src/pets/petNames.ts",
+      "source": "interface Pet { name: string }\n\nexport const petNames = (pets: Pet[]): string[] => {\n  const names: string[] = []\n  for (const pet of pets) {\n    names.push(pet.name.toUpperCase())\n  }\n  return names\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The loop pushes a transformed value for every element into an array declared above it, which a single map call would express directly.",
+      "tags": [
+        "violation",
+        "map"
+      ]
+    },
+    {
+      "id": "violation-reduce-invoice-total",
+      "filename": "src/billing/invoiceTotal.ts",
+      "source": "interface LineItem { amountCents: number }\n\nexport const invoiceTotal = (lineItems: LineItem[]): number => {\n  let total = 0\n  for (const lineItem of lineItems) {\n    total += lineItem.amountCents\n  }\n  return total\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The loop accumulates into a scalar declared before the loop with +=, which a single reduce call would express directly.",
+      "tags": [
+        "violation",
+        "reduce"
+      ]
+    },
+    {
+      "id": "violation-index-by-team-id",
+      "filename": "src/teams/teamsById.ts",
+      "source": "interface Team { id: string; name: string }\n\nexport const teamsById = (teams: Team[]): Record<string, Team> => {\n  const byId: Record<string, Team> = {}\n  for (const team of teams) {\n    byId[team.id] = team\n  }\n  return byId\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The loop assigns into an object declared before the loop keyed by each element, which Object.fromEntries or reduce would express directly.",
+      "tags": [
+        "violation",
+        "object-fromEntries"
+      ]
+    },
+    {
+      "id": "violation-flatten-team-members",
+      "filename": "src/teams/allMembers.ts",
+      "source": "interface Team { members: string[] }\n\nexport const allMembers = (teams: Team[]): string[] => {\n  const members: string[] = []\n  for (const team of teams) {\n    for (const member of team.members) {\n      members.push(member)\n    }\n  }\n  return members\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The nested loop pushes every inner element into an array declared above both loops, which a single flatMap call would express directly.",
+      "tags": [
+        "violation",
+        "flatMap"
+      ]
+    },
+    {
+      "id": "violation-found-flag-first-overdue",
+      "filename": "src/billing/hasOverdueInvoice.ts",
+      "source": "interface Invoice { overdue: boolean }\n\nexport const hasOverdueInvoice = (invoices: Invoice[]): boolean => {\n  let found = false\n  for (const invoice of invoices) {\n    if (invoice.overdue) {\n      found = true\n    }\n  }\n  return found\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The loop sets a flag declared before the loop once true and never exits early, which a single some call would express directly.",
+      "tags": [
+        "violation",
+        "some"
+      ]
+    },
+    {
+      "id": "effect-register-routes-on-server",
+      "filename": "src/app/registerRoutes.ts",
+      "source": "interface Route { method: string; path: string }\ninterface Server { route: (route: Route) => void }\n\nexport const registerRoutes = (routes: Route[], server: Server): void => {\n  for (const route of routes) {\n    server.route(route)\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_performs_effects",
+      "rationale": "The loop's purpose is to register each route on the server as a side effect; it produces no collection or scalar result.",
+      "tags": [
+        "safe",
+        "effect",
+        "registration"
+      ]
+    },
+    {
+      "id": "effect-send-emails-in-any-order",
+      "filename": "src/notifications/sendReminders.ts",
+      "source": "interface Reminder { to: string; body: string }\ninterface Mailer { send: (reminder: Reminder) => Promise<void> }\n\nexport const sendReminders = async (reminders: Reminder[], mailer: Mailer): Promise<void> => {\n  for (const reminder of reminders) {\n    await mailer.send(reminder)\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_performs_effects",
+      "rationale": "Each iteration awaits sending one email as a side effect and the order among reminders carries no meaning, so the loop performs effects rather than building a value.",
+      "tags": [
+        "safe",
+        "effect",
+        "email"
+      ]
+    },
+    {
+      "id": "effect-log-each-pet",
+      "filename": "src/pets/logPets.ts",
+      "source": "interface Pet { id: string }\ninterface Logger { info: (message: string) => void }\n\nexport const logPets = (pets: Pet[], logger: Logger): void => {\n  for (const pet of pets) {\n    logger.info(`Loaded pet ${pet.id}`)\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_performs_effects",
+      "rationale": "The loop's only purpose is to log a message for each pet; it produces no value.",
+      "tags": [
+        "safe",
+        "effect",
+        "logging"
+      ]
+    },
+    {
+      "id": "effect-write-rows-to-repository",
+      "filename": "src/pets/savePets.ts",
+      "source": "interface Pet { id: string; name: string }\ninterface PetRepository { save: (pet: Pet) => Promise<void> }\n\nexport const savePets = async (pets: Pet[], repository: PetRepository): Promise<void> => {\n  for (const pet of pets) {\n    await repository.save(pet)\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_performs_effects",
+      "rationale": "The loop writes each pet to an injected repository as a side effect and returns nothing, so it performs effects rather than building a value.",
+      "tags": [
+        "safe",
+        "effect",
+        "persistence"
+      ]
+    },
+    {
+      "id": "effect-delete-each-file",
+      "filename": "src/imports/cleanupImportFiles.ts",
+      "source": "interface FileSystem { remove: (path: string) => Promise<void> }\n\nexport const cleanupImportFiles = async (paths: string[], fileSystem: FileSystem): Promise<void> => {\n  for (const path of paths) {\n    await fileSystem.remove(path)\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_performs_effects",
+      "rationale": "The loop deletes each file through an injected file system as a side effect and produces no value.",
+      "tags": [
+        "safe",
+        "effect",
+        "file-deletion"
+      ]
+    },
+    {
+      "id": "imperative-break-on-first-adjacent-match",
+      "filename": "src/pets/firstAdjacentDuplicate.ts",
+      "source": "export const firstAdjacentDuplicateIndex = (weights: number[]): number => {\n  let index = -1\n  for (let i = 0; i < weights.length - 1; i++) {\n    if (weights[i] === weights[i + 1]) {\n      index = i\n      break\n    }\n  }\n  return index\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_needs_imperative_control",
+      "rationale": "The loop compares each element against its neighbour by index and breaks on the first match, sequencing no single collection method expresses.",
+      "tags": [
+        "safe",
+        "imperative",
+        "break"
+      ]
+    },
+    {
+      "id": "imperative-drain-growing-queue",
+      "filename": "src/jobs/drainQueue.ts",
+      "source": "interface Job { id: string }\ninterface Queue { length: number; shift: () => Job | undefined; push: (job: Job) => void }\ninterface JobRunner { run: (job: Job) => Job[] }\n\nexport const drainQueue = (queue: Queue, runner: JobRunner): void => {\n  while (queue.length > 0) {\n    const job = queue.shift()\n    if (job === undefined) continue\n    const followUps = runner.run(job)\n    for (const followUp of followUps) {\n      queue.push(followUp)\n    }\n  }\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_needs_imperative_control",
+      "rationale": "The while loop drains a queue whose length changes inside the body as new jobs are pushed, a shape no fixed-length collection method expresses.",
+      "tags": [
+        "safe",
+        "imperative",
+        "queue"
+      ]
+    },
+    {
+      "id": "imperative-retry-with-attempt-counter",
+      "filename": "src/http/retryRequest.ts",
+      "source": "interface HttpClient { get: (url: string) => Promise<Response> }\n\nexport const fetchWithRetry = async (url: string, client: HttpClient, maxAttempts: number): Promise<Response> => {\n  let attempt = 0\n  let lastError: unknown\n  while (attempt < maxAttempts) {\n    try {\n      return await client.get(url)\n    } catch (error) {\n      lastError = error\n      attempt++\n    }\n  }\n  throw lastError\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_choice": "loop_needs_imperative_control",
+      "rationale": "The loop retries a request a bounded number of times, tracking an attempt counter and the last error across iterations, a sequencing no single collection method expresses.",
+      "tags": [
+        "safe",
+        "imperative",
+        "retry"
+      ]
+    },
+    {
+      "id": "violation-forEach-pushes-into-outer-array",
+      "filename": "src/pets/petIds.ts",
+      "source": "interface Pet { id: string }\n\nexport const petIds = (pets: Pet[]): string[] => {\n  const ids: string[] = []\n  pets.forEach((pet) => {\n    ids.push(pet.id)\n  })\n  return ids\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": true,
+      "expected_choice": "loop_is_disguised_transformation",
+      "rationale": "The forEach body pushes a value derived from each element into an array declared before it and returns that array, which a single map call would express directly.",
+      "tags": [
+        "violation",
+        "forEach",
+        "map"
+      ]
+    },
+    {
+      "id": "test-double-file",
+      "filename": "src/pets/petServiceFakes.ts",
+      "source": "export const petNames = (pets: { name: string }[]): string[] => {\n  const names: string[] = []\n  for (const pet of pets) {\n    names.push(pet.name)\n  }\n  return names\n}\n",
+      "rule_id": "ideology/prefer-declarative-transformation",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

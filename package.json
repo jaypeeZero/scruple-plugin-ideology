@@ -1,0 +1,52 @@
+{
+  "name": "scruple-plugin-ideology",
+  "version": "0.1.0",
+  "description": "Scruple plugin enforcing the engineering ideology in docs/ideologies as semantic lint rules.",
+  "license": "MIT",
+  "repository": "github:jaypeeZero/scruple-plugin-ideology",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cached-provider": {
+      "types": "./dist/cached-provider/index.d.ts",
+      "default": "./dist/cached-provider/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "evals",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "test": "ava",
+    "lint": "eslint .",
+    "eval": "node evals/run.ts",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "@scruple/core": "^0.2.0"
+  },
+  "devDependencies": {
+    "@scruple/core": "^0.2.0",
+    "@scruple/parser-oxc": "^0.2.0",
+    "@scruple/provider-jev": "^0.2.0",
+    "typescript": "^6.0.3",
+    "ava": "^6.4.1",
+    "tsx": "^4.23.13",
+    "eslint": "^10.4.0",
+    "@eslint/js": "^10.0.1",
+    "typescript-eslint": "^8.70.0",
+    "globals": "^17.6.0",
+    "@types/node": "^24.13.4"
+  }
+}

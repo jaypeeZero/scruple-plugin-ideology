@@ -1,0 +1,234 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/model-absence": {
+      "finding": "default_hides_missing_value",
+      "safe": "absence_is_modelled"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-customer-name-greeting",
+      "filename": "src/customers/greetCustomer.ts",
+      "source": "interface Customer { name?: string }\n\nexport const greetCustomer = (customer: Customer): string => {\n  const name = customer.name ?? ''\n  return `Welcome back, ${name}!`\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "A missing customer name is silently replaced with an empty string and interpolated straight into the greeting, so the caller can no longer tell the name was absent.",
+      "tags": [
+        "violation",
+        "nullish",
+        "string"
+      ]
+    },
+    {
+      "id": "violation-amount-summed-into-total",
+      "filename": "src/billing/invoiceTotal.ts",
+      "source": "interface LineItem { amountCents?: number }\n\nexport const invoiceTotal = (lineItems: LineItem[]): number => {\n  return lineItems.reduce((total, item) => total + (item.amountCents ?? 0), 0)\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "A missing line item amount is replaced with zero and folded into the running total, so a missing amount is indistinguishable from a genuine zero charge.",
+      "tags": [
+        "violation",
+        "nullish",
+        "number"
+      ]
+    },
+    {
+      "id": "violation-owner-persisted-as-unknown",
+      "filename": "src/tickets/persistTicket.ts",
+      "source": "interface Ticket { id: string; owner?: string }\ninterface TicketRepository { save: (ticket: Ticket) => Promise<void> }\n\nexport const persistTicket = (ticket: Ticket, repository: TicketRepository): Promise<void> => {\n  const record = { ...ticket, owner: ticket.owner || 'unknown' }\n  return repository.save(record)\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "A missing owner is replaced with the placeholder string 'unknown' before being persisted, baking a fabricated value into the stored record.",
+      "tags": [
+        "violation",
+        "or",
+        "persistence"
+      ]
+    },
+    {
+      "id": "violation-item-count-loses-not-provided",
+      "filename": "src/orders/itemCount.ts",
+      "source": "interface StoredOrder { id: string; customerId: string; items: string[] | null }\ninterface OrderStore { load: (id: string) => Promise<StoredOrder> }\n\n// A null items column means the order was created before line items were recorded.\nexport const chargeableLineCount = async (orders: OrderStore, orderId: string): Promise<number> => {\n  const order = await orders.load(orderId)\n  const items = order.items ?? []\n  return items.length\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "A null items column means the line items were never recorded, but defaulting to an empty array reports zero chargeable lines as if that were known, so the caller bills nothing instead of learning the order is incomplete.",
+      "tags": [
+        "violation",
+        "nullish",
+        "array"
+      ]
+    },
+    {
+      "id": "violation-id-na-in-report",
+      "filename": "src/orders/reportLineFor.ts",
+      "source": "interface Order { id?: string }\n\nexport const reportLineFor = (order: Order): string => {\n  const id = order.id ?? 'N/A'\n  return `Order ${id} processed`\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "A missing order id is replaced with the placeholder 'N/A' and written into the report line as though it were a real identifier.",
+      "tags": [
+        "violation",
+        "nullish",
+        "reporting"
+      ]
+    },
+    {
+      "id": "violation-date-parse-falls-back-to-now",
+      "filename": "src/events/eventDate.ts",
+      "source": "interface DateParser { parse: (raw: string) => Date | undefined }\n\nexport const eventDate = (raw: string, parser: DateParser): Date => {\n  const parsed = parser.parse(raw)\n  return parsed ?? new Date()\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": true,
+      "expected_choice": "default_hides_missing_value",
+      "rationale": "When the date fails to parse, the function fabricates the current instant instead of the event's real date, and the caller has no way to tell parsing failed.",
+      "tags": [
+        "violation",
+        "nullish",
+        "date"
+      ]
+    },
+    {
+      "id": "ok-page-size-default",
+      "filename": "src/pages/fetchPage.ts",
+      "source": "interface Item { id: string }\ninterface ItemRepository { list: (offset: number, pageSize: number) => Promise<Item[]> }\n\nexport const fetchPage = (offset: number, repository: ItemRepository, pageSize = 20): Promise<Item[]> => {\n  return repository.list(offset, pageSize)\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "default_is_a_declared_option",
+      "rationale": "The page size is a setting callers may omit by contract, and 20 is the documented behaviour of omitting it rather than a stand-in for a missing value.",
+      "tags": [
+        "safe",
+        "parameter",
+        "option"
+      ]
+    },
+    {
+      "id": "ok-timeout-default-in-options-bag",
+      "filename": "src/http/fetchWithTimeout.ts",
+      "source": "interface HttpResponse { status: number }\ninterface HttpClient { get: (url: string, timeoutMs: number) => Promise<HttpResponse> }\ninterface RequestOptions { timeoutMs?: number }\n\nexport const fetchWithTimeout = (url: string, client: HttpClient, { timeoutMs = 5000 }: RequestOptions = {}): Promise<HttpResponse> => {\n  return client.get(url, timeoutMs)\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "default_is_a_declared_option",
+      "rationale": "An omittable options bag with a defaulted timeout is standard call-configuration, not a stand-in for a domain value the caller failed to supply.",
+      "tags": [
+        "safe",
+        "parameter",
+        "option"
+      ]
+    },
+    {
+      "id": "ok-retries-declared-option",
+      "filename": "src/http/fetchWithRetries.ts",
+      "source": "interface HttpResponse { status: number }\ninterface HttpClient { get: (url: string) => Promise<HttpResponse> }\ninterface RetryOptions { retries?: number }\n\nexport const fetchWithRetries = (url: string, client: HttpClient, options: RetryOptions): Promise<HttpResponse> => {\n  const retries = options.retries ?? 3\n  return attemptRequest(client, url, retries)\n}\n\ndeclare function attemptRequest(client: HttpClient, url: string, retries: number): Promise<HttpResponse>\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "default_is_a_declared_option",
+      "rationale": "A retry count is a documented setting callers may omit; defaulting it to 3 is the contract's stated behaviour, not a fabricated domain value.",
+      "tags": [
+        "safe",
+        "nullish",
+        "option"
+      ]
+    },
+    {
+      "id": "ok-optional-logger-collaborator",
+      "filename": "src/tasks/withLogging.ts",
+      "source": "interface Logger { info: (message: string) => void }\nconst noopLogger: Logger = { info: () => {} }\n\nexport const withLogging = (task: () => void, logger?: Logger): void => {\n  const activeLogger = logger ?? noopLogger\n  activeLogger.info('starting task')\n  task()\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "default_is_a_declared_option",
+      "rationale": "An optional collaborator falling back to a no-op implementation is the documented behaviour of omitting it, not a fabricated stand-in for missing data.",
+      "tags": [
+        "safe",
+        "nullish",
+        "collaborator"
+      ]
+    },
+    {
+      "id": "ok-format-declared-option",
+      "filename": "src/formatting/formatTimestamp.ts",
+      "source": "type DateFormat = 'iso' | 'short'\n\nexport const formatTimestamp = (date: Date, format?: DateFormat): string => {\n  const activeFormat = format ?? 'iso'\n  return activeFormat === 'iso' ? date.toISOString() : date.toDateString()\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "default_is_a_declared_option",
+      "rationale": "The output format is a formatting choice the caller may omit, and 'iso' is the documented default rather than a stand-in for a missing value.",
+      "tags": [
+        "safe",
+        "nullish",
+        "option"
+      ]
+    },
+    {
+      "id": "ok-cache-miss-returns-null",
+      "filename": "src/customers/findCustomer.ts",
+      "source": "interface Customer { id: string }\n\nexport const findCustomer = (id: string, cache: Map<string, Customer>): Customer | null => {\n  return cache.get(id) ?? null\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "A cache miss is converted to an explicit null the caller must check, rather than being replaced with a fabricated customer.",
+      "tags": [
+        "safe",
+        "nullish",
+        "null-result"
+      ]
+    },
+    {
+      "id": "ok-parse-amount-returns-discriminated-result",
+      "filename": "src/billing/parseAmount.ts",
+      "source": "interface RawInput { amount?: string }\ntype ParseOutcome = { ok: true; value: number } | { ok: false; reason: string }\n\nexport const parseAmount = (input: RawInput): ParseOutcome => {\n  const raw = input.amount ?? ''\n  if (raw === '') return { ok: false, reason: 'amount is missing' }\n  const value = Number(raw)\n  return Number.isNaN(value) ? { ok: false, reason: 'amount is not a number' } : { ok: true, value }\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "The defaulted empty string is used only to detect absence and immediately turned into an explicit ok: false result, never treated as a real amount.",
+      "tags": [
+        "safe",
+        "nullish",
+        "discriminated-result"
+      ]
+    },
+    {
+      "id": "ok-required-env-var-throws",
+      "filename": "src/conf/requiredEnv.ts",
+      "source": "export const requiredEnv = (key: string, env: NodeJS.ProcessEnv): string => {\n  const value = env[key] ?? ''\n  if (value === '') throw new Error(`${key} is required`)\n  return value\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "A missing required environment variable fails fast with a thrown error; the defaulted empty string is only a sentinel used to detect the absence.",
+      "tags": [
+        "safe",
+        "nullish",
+        "throws"
+      ]
+    },
+    {
+      "id": "ok-nullable-email-normalized-to-undefined",
+      "filename": "src/customers/emailFor.ts",
+      "source": "export const emailFor = (row: Record<string, string | null>): string | undefined => {\n  return row.email ?? undefined\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "A stored null is normalized to undefined, keeping the absence visible for the caller to check instead of substituting a fabricated email.",
+      "tags": [
+        "safe",
+        "nullish",
+        "undefined-result"
+      ]
+    },
+    {
+      "id": "test-double-file",
+      "filename": "src/customers/greetCustomerFakes.ts",
+      "source": "export const greetCustomer = (customer: { name?: string }): string => {\n  const name = customer.name ?? ''\n  return `Hi ${name}`\n}\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
