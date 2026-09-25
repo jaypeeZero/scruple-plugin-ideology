@@ -1,6 +1,6 @@
 # scruple-plugin-ideology
 
-A Scruple plugin enforcing the engineering ideology below as semantic lint rules, plus a disk-backed decision cache for the Scruple `DecisionProvider` contract.
+A Scruple plugin enforcing the engineering ideology below as semantic lint rules.
 
 ## Philosophy
 
@@ -34,14 +34,13 @@ import { defineConfig } from '@scruple/core'
 import { oxcParser } from '@scruple/parser-oxc'
 import { jevProvider } from '@scruple/provider-jev'
 import { ideology } from 'scruple-plugin-ideology'
-import { cachedProvider } from 'scruple-plugin-ideology/cached-provider'
 
 const apiKey = process.env['TYPESAFE_API_KEY']
 if (apiKey === undefined) throw new Error('TYPESAFE_API_KEY is required')
 
 export default defineConfig({
   parser: oxcParser(),
-  provider: cachedProvider(jevProvider({ apiKey })),
+  provider: jevProvider({ apiKey }),
   include: ['src/**/*.ts'],
   plugins: { ideology: ideology() },
   rules: {
@@ -75,18 +74,9 @@ export default defineConfig({
 // scruple-disable-next-line ideology/no-hidden-state -- module-level cache is a deliberate exception
 ```
 
-## Cached provider
+## Caching decisions
 
-Wraps a Scruple `DecisionProvider` so an identical request is answered from disk instead of the wrapped provider.
-
-- `cachedProvider(inner, options?)` returns a `DecisionProvider` with the same `id`, `concurrency`, and `close` as `inner`.
-- The cache key is the SHA-256 hash of `{ providerId: inner.id, request }`.
-- Each key is one file, `<cacheDir>/<key>.json`, holding the `DecisionResponse` as written.
-- `options.cacheDir` defaults to `node_modules/.cache/scruple`.
-- `options.enabled` defaults to `true`. `false` makes `evaluate` a pass-through to `inner`.
-- A missing, unreadable, or malformed cache file is a miss.
-- A rejection from `inner.evaluate` propagates unchanged.
-- A failure while writing the cache file does not fail the request.
+Caching lives in [scruple-provider-cache](https://github.com/jaypeeZero/scruple-provider-cache), which wraps any `DecisionProvider`. Install it alongside this plugin.
 
 ## Evals
 

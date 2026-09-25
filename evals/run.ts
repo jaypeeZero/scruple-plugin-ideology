@@ -4,7 +4,6 @@ import { defineConfig, runScruple } from '@scruple/core'
 import type { SourceFile } from '@scruple/core'
 import { oxcParser } from '@scruple/parser-oxc'
 import { jevProvider } from '@scruple/provider-jev'
-import { cachedProvider } from '../src/cached-provider/index.ts'
 import { ideology } from '../src/index.ts'
 
 interface Fixture {
@@ -46,7 +45,7 @@ const ruleIds = Object.keys(ideology().rules).map((rule) => `ideology/${rule}`)
 
 const config = defineConfig({
   parser: oxcParser(),
-  provider: cachedProvider(jevProvider({ apiKey }), { enabled: false }),  // evals are always live
+  provider: jevProvider({ apiKey }),  // evals are always live, never cached
   include: ['**/*.ts'],
   plugins: { ideology: ideology() },
   rules: Object.fromEntries(ruleIds.map((ruleId) => [ruleId, 'warn']))

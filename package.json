@@ -1,6 +1,6 @@
 {
   "name": "scruple-plugin-ideology",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scruple plugin enforcing the engineering ideology in docs/ideologies as semantic lint rules.",
   "license": "MIT",
   "repository": "github:jaypeeZero/scruple-plugin-ideology",
@@ -12,10 +12,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./cached-provider": {
-      "types": "./dist/cached-provider/index.d.ts",
-      "default": "./dist/cached-provider/index.js"
     }
   },
   "files": [
