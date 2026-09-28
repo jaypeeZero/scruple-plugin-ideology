@@ -10,6 +10,7 @@ import type {
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
 import { topLevelFunctions } from '../functions.ts'
+import { parameterListText } from '../parameters.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface ModelAbsenceOptions extends DecisionRuleOptions {
@@ -48,27 +49,6 @@ interface DefaultEvidence {
 const literalStart = '(?:\'[^\']*\'|"[^"]*"|`[^`]*`|\\d+(?:\\.\\d+)?|\\[[^\\]]*\\]|\\{[^}]*\\}|true\\b|false\\b)'
 const orLiteralRegex = new RegExp(`\\|\\|\\s*${literalStart}`)
 const parameterDefaultRegex = new RegExp(`[A-Za-z_$][\\w$]*\\s*=\\s*${literalStart}`, 'g')
-
-// A single scan for the parameter list's matching close paren: brackets nest, but
-// the fixtures this rule sees never hide parens inside a string, so a plain
-// depth counter is enough.
-const parameterListText = (source: string): string => {
-  const openParen = source.indexOf('(')
-  const arrow = source.indexOf('=>')
-  if (openParen === -1 || (arrow !== -1 && arrow < openParen)) {
-    return arrow === -1 ? '' : source.slice(0, arrow)
-  }
-
-  let depth = 0
-  for (let i = openParen; i < source.length; i++) {
-    if (source[i] === '(') depth++
-    else if (source[i] === ')') {
-      depth--
-      if (depth === 0) return source.slice(openParen + 1, i)
-    }
-  }
-  return source.slice(openParen + 1)
-}
 
 const nullishDefaults = (source: string): DefaultEvidence[] =>
   source.split('\n').flatMap((line) => {

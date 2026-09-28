@@ -46,6 +46,7 @@ export default defineConfig({
   rules: {
     'ideology/inject-dependencies': 'warn',
     'ideology/model-absence': 'warn',
+    'ideology/no-argument-mutation': 'warn',
     'ideology/no-hidden-state': 'warn',
     'ideology/prefer-declarative-transformation': 'warn',
     'ideology/translate-at-boundary': 'warn'
@@ -59,6 +60,7 @@ export default defineConfig({
 |---|---|---|
 | `inject-dependencies` | Inject dependencies. Never instantiate or import a dependency internally. | `compositionRootPattern` (`(^\|/)index\.[cm]?[jt]sx?$`), `testFilePattern` (shared default, see below), `factoryCallPatterns` (`['\.create$', '^create[A-Z]', '^make[A-Z]', '^connect$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `model-absence` | Model absence, don't default it. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
+| `no-argument-mutation` | Do not mutate inputs; return a new value instead. | `testFilePattern` (shared default, see below), `mutatingMethodPatterns` (`['^(push\|pop\|shift\|unshift\|splice\|sort\|reverse\|fill\|copyWithin\|set\|delete\|clear\|add)$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-hidden-state` | Pure functions, explicit inputs, no hidden state. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-declarative-transformation` | Declarative transformations over imperative loops. | `testFilePattern` (shared default, see below), `effectCallPatterns` (`['\.forEach$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `translate-at-boundary` | Translate external formats at boundaries, not in core logic. | `testFilePattern` (shared default, see below), `parseCallPatterns` (`['^JSON\.parse$', '^parseInt$', '^parseFloat$', '^Number$', '^Date\.parse$', '\.split$', '\.validate(Async)?$', '\.parse$']`), `externalShapePatterns` (`['\b(payload\|query\|headers\|params\|body\|statusCode)\b', '\breq(uest)?\.', '\bres(ponse)?\.(data\|body)\b', '\brow(s)?\b']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |

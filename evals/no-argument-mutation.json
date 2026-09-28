@@ -1,0 +1,167 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-argument-mutation": {
+      "finding": "mutates_parameter",
+      "safe": "mutates_local_copy"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-property-assign",
+      "filename": "src/services/orderDiscount.ts",
+      "source": "export const applyDiscount = (order) => {\n  order.total = order.total * 0.9\n  return order\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "applyDiscount assigns to a property of the order parameter directly, so the caller's order object is changed by the call.",
+      "tags": [
+        "violation",
+        "property-assign"
+      ]
+    },
+    {
+      "id": "violation-array-push",
+      "filename": "src/services/lineItems.ts",
+      "source": "export const addLineItem = (items, item) => {\n  items.push(item)\n  return items\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "addLineItem pushes into the items array it received instead of returning a new array, so the caller's array grows in place.",
+      "tags": [
+        "violation",
+        "array-push"
+      ]
+    },
+    {
+      "id": "violation-nested-path",
+      "filename": "src/services/shipping.ts",
+      "source": "export const markShipped = (order) => {\n  order.status.shipped = true\n  return order\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "markShipped assigns through a nested property path rooted at the order parameter, mutating a value the caller still holds.",
+      "tags": [
+        "violation",
+        "nested-path"
+      ]
+    },
+    {
+      "id": "violation-map-set",
+      "filename": "src/services/visitCounts.ts",
+      "source": "export const recordVisit = (counts, key) => {\n  counts.set(key, (counts.get(key) ?? 0) + 1)\n  return counts\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "recordVisit calls set on the counts Map it received as a parameter, changing what every other holder of that Map sees.",
+      "tags": [
+        "violation",
+        "map-set"
+      ]
+    },
+    {
+      "id": "violation-delete",
+      "filename": "src/services/userSecrets.ts",
+      "source": "export const stripSecrets = (user) => {\n  delete user.password\n  return user\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "stripSecrets deletes a property directly on the user parameter instead of returning a copy without that property.",
+      "tags": [
+        "violation",
+        "delete"
+      ]
+    },
+    {
+      "id": "violation-sort-in-place",
+      "filename": "src/services/eventSchedule.ts",
+      "source": "export const sortByDate = (events) => {\n  events.sort((a, b) => a.date - b.date)\n  return events\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "sortByDate calls the in-place sort method on the events array it received, reordering the caller's own array.",
+      "tags": [
+        "violation",
+        "sort-in-place"
+      ]
+    },
+    {
+      "id": "ok-spread-copy",
+      "filename": "src/services/orderDiscountCopy.ts",
+      "source": "export const applyDiscount = (order) => {\n  return { ...order, total: order.total * 0.9 }\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "applyDiscount spreads order into a new object and returns that copy; no property of the order parameter is ever assigned.",
+      "tags": [
+        "safe",
+        "spread-copy"
+      ]
+    },
+    {
+      "id": "ok-slice-then-sort",
+      "filename": "src/services/eventScheduleCopy.ts",
+      "source": "export const sortByDate = (events) => {\n  const copy = events.slice()\n  copy.sort((a, b) => a.date - b.date)\n  return copy\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "sortByDate slices events into a local copy first and sorts that copy, leaving the events parameter itself untouched.",
+      "tags": [
+        "safe",
+        "slice-then-sort"
+      ]
+    },
+    {
+      "id": "ok-local-accumulator",
+      "filename": "src/services/grouping.ts",
+      "source": "export const groupBy = (items, keyOf) => {\n  const groups = new Map()\n  for (const item of items) {\n    const key = keyOf(item)\n    const bucket = groups.get(key) ?? []\n    bucket.push(item)\n    groups.set(key, bucket)\n  }\n  return groups\n}\n",
+      "rationale": "groupBy builds its own local Map and never assigns through or calls a mutating method on the items or keyOf parameters themselves; two known false negatives are out of scope for this collector: a reduce callback's accumulator is not a top-level function parameter, and an alias such as `const r = record; r.x = 1` hides the mutation behind a local binding.",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "tags": [
+        "safe",
+        "local-accumulator"
+      ]
+    },
+    {
+      "id": "ambiguous-builder-param",
+      "filename": "src/services/responseHeaders.ts",
+      "source": "export const writeHeaders = (response, headers) => {\n  response.headers.set('content-type', headers.contentType)\n  return response\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": false,
+      "expected_choice": "parameter_is_a_builder_by_contract",
+      "rationale": "response is a builder object the caller passed in specifically to be filled by setting headers on it, which is writeHeaders's documented job rather than an unexpected side effect.",
+      "tags": [
+        "ambiguous",
+        "builder-param"
+      ]
+    },
+    {
+      "id": "violation-destructured-rename",
+      "filename": "src/services/shipping.ts",
+      "source": "export const markShipped = ({ order: current }, at) => {\n  current.status = 'shipped'\n  current.shippedAt = at\n  return current\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": true,
+      "expected_choice": "mutates_parameter",
+      "rationale": "The parameter is destructured and renamed to current; assigning current.status changes the caller's order object, so the rename does not hide the mutation.",
+      "tags": [
+        "violation",
+        "destructured"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/orderDiscount.spec.ts",
+      "source": "export const applyDiscount = (order) => {\n  order.total = order.total * 0.9\n  return order\n}\n",
+      "rule_id": "ideology/no-argument-mutation",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
