@@ -1,0 +1,167 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/prefer-simple-construct": {
+      "finding": "clever_where_simple_suffices",
+      "safe": "simplest_correct_option"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-nested-ternary",
+      "filename": "src/services/tiers.ts",
+      "source": "export const tierFor = (spend) => {\n  const tier = spend > 1000 ? 'gold' : spend > 500 ? 'silver' : spend > 100 ? 'bronze' : 'none'\n  return tier\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "Three chained ternaries build a tier label; a lookup table or an if/else chain would express the same four-way choice without stacking conditional operators.",
+      "tags": [
+        "violation",
+        "nested-ternary"
+      ]
+    },
+    {
+      "id": "violation-reduce-to-object",
+      "filename": "src/services/indexById.ts",
+      "source": "export const indexById = (items) => {\n  return items.reduce((acc, i) => {\n    acc[i.id] = i\n    return acc\n  }, {})\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "The reduce rebuilds an object keyed by id one entry at a time; Object.fromEntries(items.map(...)) would build the same index directly.",
+      "tags": [
+        "violation",
+        "reduce-to-object"
+      ]
+    },
+    {
+      "id": "violation-regex-startswith",
+      "filename": "src/services/isSecure.ts",
+      "source": "export const isSecure = (url) => {\n  return /^https:/.test(url)\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "The pattern has no alternation or character classes; it is a fixed prefix, so url.startsWith('https:') says the same thing without a regex engine.",
+      "tags": [
+        "violation",
+        "regex-startswith"
+      ]
+    },
+    {
+      "id": "violation-double-tilde",
+      "filename": "src/services/toCents.ts",
+      "source": "export const toCents = (amount) => {\n  const cents = ~~(amount * 100)\n  return cents\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "Double bitwise NOT truncates toward zero as a side effect of two's-complement arithmetic; Math.trunc says what is meant.",
+      "tags": [
+        "violation",
+        "double-tilde"
+      ]
+    },
+    {
+      "id": "violation-double-bang",
+      "filename": "src/services/hasEmail.ts",
+      "source": "export const hasEmail = (user) => {\n  return !!user.email\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "Double negation coerces to boolean as a trick; Boolean(user.email) or a comparison against undefined/null says the same thing plainly.",
+      "tags": [
+        "violation",
+        "double-bang"
+      ]
+    },
+    {
+      "id": "violation-eval",
+      "filename": "src/services/evaluateFormula.ts",
+      "source": "export const evaluateFormula = (expression) => {\n  return eval(expression)\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "eval runs arbitrary source as code; a dedicated expression parser or a fixed set of supported operations would meet the same requirement without that surface.",
+      "tags": [
+        "violation",
+        "eval"
+      ]
+    },
+    {
+      "id": "ok-single-ternary",
+      "filename": "src/services/labelFor.ts",
+      "source": "export const labelFor = (active) => {\n  return active ? 'Active' : 'Inactive'\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "A single-level ternary is already the plainest form of a two-way choice; there is nothing to simplify further.",
+      "tags": [
+        "safe",
+        "single-ternary"
+      ]
+    },
+    {
+      "id": "ok-reduce-to-scalar",
+      "filename": "src/services/totalOf.ts",
+      "source": "export const totalOf = (items) => {\n  return items.reduce((sum, i) => sum + i.amount, 0)\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The reduce folds to a scalar sum with a numeric initial value, which is exactly what reduce is for; no map/filter/Object.fromEntries call replaces it.",
+      "tags": [
+        "safe",
+        "reduce-to-scalar"
+      ]
+    },
+    {
+      "id": "ok-real-regex",
+      "filename": "src/services/isEmail.ts",
+      "source": "export const isEmail = (value) => {\n  return /^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(value)\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The pattern uses real character classes and repetition to validate an email shape; no single string method expresses that.",
+      "tags": [
+        "safe",
+        "real-regex"
+      ]
+    },
+    {
+      "id": "ok-bit-flags",
+      "filename": "src/services/canWrite.ts",
+      "source": "export const canWrite = (permissions) => {\n  return (permissions & WRITE) !== 0\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": false,
+      "expected_choice": "simplest_correct_option",
+      "rationale": "This is a real bit-flag test against a named flag constant, which is exactly what the bitwise AND operator is for; there is no plainer equivalent.",
+      "tags": [
+        "safe",
+        "bit-flags"
+      ]
+    },
+    {
+      "id": "ambiguous-reduce-to-map-with-grouping",
+      "filename": "src/services/groupByKey.ts",
+      "source": "export const groupByKey = (items) => {\n  return items.reduce((m, i) => m.set(i.key, [...(m.get(i.key) ?? []), i]), new Map())\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": true,
+      "expected_choice": "clever_where_simple_suffices",
+      "rationale": "The reduce hand-rolls grouping into a Map; Map.groupBy or Object.groupBy expresses the same grouping directly without the manual get-then-set dance.",
+      "tags": [
+        "ambiguous",
+        "reduce-to-map"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/tiers.spec.ts",
+      "source": "export const tierFor = (spend) => {\n  const tier = spend > 1000 ? 'gold' : spend > 500 ? 'silver' : spend > 100 ? 'bronze' : 'none'\n  return tier\n}\n",
+      "rule_id": "ideology/prefer-simple-construct",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,6 @@
 import { resolveDecisionOptions, resolveDiagnosticSeverity } from '@scruple/core'
 import type {
   ChoiceQuestion,
-  ControlRegionFact,
   DecisionRuleOptions,
   Diagnostic,
   ParsedDocument,
@@ -11,6 +10,7 @@ import type {
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
 import { topLevelFunctions } from '../functions.ts'
+import { loopRegionsWithin } from '../loopRegions.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface PreferDeclarativeTransformationOptions extends DecisionRuleOptions {
@@ -65,10 +65,7 @@ export const preferDeclarativeTransformation: RuleFactory<PreferDeclarativeTrans
       if (testFilePattern.test(document.filename)) return []
 
       return topLevelFunctions(document).flatMap((fn) => {
-        const loopRegions = (document.facts?.controls ?? []).filter(
-          (control): control is ControlRegionFact & { kind: 'loop' } =>
-            control.kind === 'loop' && control.range.start >= fn.range.start && control.range.end <= fn.range.end
-        )
+        const loopRegions = loopRegionsWithin(document, fn)
         const effectCalls = fn.calls.filter((call) => matchesAny(effectCallPatterns, call.callee))
 
         if (loopRegions.length === 0 && effectCalls.length === 0) return []

@@ -7,6 +7,7 @@ import { noHardcodedConfig } from './rules/noHardcodedConfig.ts'
 import { noHiddenState } from './rules/noHiddenState.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
+import { preferSimpleConstruct } from './rules/preferSimpleConstruct.ts'
 import { translateAtBoundary } from './rules/translateAtBoundary.ts'
 
 export const ideology = () =>
@@ -20,6 +21,7 @@ export const ideology = () =>
       'no-hidden-state': noHiddenState,
       'no-swallowed-errors': noSwallowedErrors,
       'prefer-declarative-transformation': preferDeclarativeTransformation,
+      'prefer-simple-construct': preferSimpleConstruct,
       'translate-at-boundary': translateAtBoundary
     }
   })

@@ -11,6 +11,7 @@ import type {
 import { boundedText } from '../bounded.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
+import { stringLiteralContents } from '../stringLiterals.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface NoHardcodedConfigOptions extends DecisionRuleOptions {
@@ -49,20 +50,6 @@ const criteria = {
 
 const finding = 'hardcodes_deploy_specific_value'
 const message = 'Read this value from configuration at the edge and pass it in.'
-
-// String literals only, quotes stripped: single- and double-quoted strings, plus
-// template literals that hold no interpolation (`${`). An interpolated template
-// mixes computed and fixed text, so its content is not a literal to classify.
-const stringLiteralContents = (line: string): string[] => {
-  const pattern = /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`/g
-  const contents: string[] = []
-  for (const match of line.matchAll(pattern)) {
-    const raw = match[0]
-    if (raw.startsWith('`') && raw.includes('${')) continue
-    contents.push(raw.slice(1, -1))
-  }
-  return contents
-}
 
 const hasConfigLiteral = (line: string, patterns: RegExp[]): boolean =>
   stringLiteralContents(line).some((content) => patterns.some((pattern) => pattern.test(content)))

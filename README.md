@@ -52,6 +52,7 @@ export default defineConfig({
     'ideology/no-hidden-state': 'warn',
     'ideology/no-swallowed-errors': 'warn',
     'ideology/prefer-declarative-transformation': 'warn',
+    'ideology/prefer-simple-construct': 'warn',
     'ideology/translate-at-boundary': 'warn'
   }
 })
@@ -69,6 +70,7 @@ export default defineConfig({
 | `no-hidden-state` | Pure functions, explicit inputs, no hidden state. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-swallowed-errors` | Errors bubble up. Only catch when recovery is possible and the rest can still run. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-declarative-transformation` | Declarative transformations over imperative loops. | `testFilePattern` (shared default, see below), `effectCallPatterns` (`['\.forEach$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
+| `prefer-simple-construct` | Never choose a clever solution when a simple one handles the same requirement. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `translate-at-boundary` | Translate external formats at boundaries, not in core logic. | `testFilePattern` (shared default, see below), `parseCallPatterns` (`['^JSON\.parse$', '^parseInt$', '^parseFloat$', '^Number$', '^Date\.parse$', '\.split$', '\.validate(Async)?$', '\.parse$']`), `externalShapePatterns` (`['\b(payload\|query\|headers\|params\|body\|statusCode)\b', '\breq(uest)?\.', '\bres(ponse)?\.(data\|body)\b', '\brow(s)?\b']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 
 ## Shared behaviours
