@@ -1,0 +1,132 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-repeated-literals": {
+      "finding": "repeated_meaningful_literal",
+      "safe": "coincidental_or_structural"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-status-string",
+      "filename": "src/services/shipping.ts",
+      "source": "export const markShipped = (order) => {\n  order.status = 'shipped'\n  return order\n}\n\nexport const isShipped = (order) => {\n  return order.status === 'shipped'\n}\n\nexport const labelFor = (status) => {\n  if (status === 'shipped') return 'Shipped'\n  return 'Unknown'\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": true,
+      "expected_choice": "repeated_meaningful_literal",
+      "rationale": "'shipped' is a status value repeated across markShipped, isShipped, and labelFor; changing that status string in one place without the others is a bug.",
+      "tags": [
+        "violation",
+        "status"
+      ]
+    },
+    {
+      "id": "violation-header-name",
+      "filename": "src/services/requestHeaders.ts",
+      "source": "export const withRequestId = (headers, id) => {\n  headers['x-request-id'] = id\n  return headers\n}\n\nexport const readRequestId = (headers) => {\n  return headers['x-request-id']\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": true,
+      "expected_choice": "repeated_meaningful_literal",
+      "rationale": "The header name 'x-request-id' is written by one function and read by another; a typo in either copy silently breaks the pairing.",
+      "tags": [
+        "violation",
+        "header"
+      ]
+    },
+    {
+      "id": "violation-threshold-number",
+      "filename": "src/services/pricingTiers.ts",
+      "source": "export const tierFor = (amount) => {\n  return amount >= 1000 ? 'gold' : 'standard'\n}\n\nexport const discountFor = (amount) => {\n  return amount >= 1000 ? 0.1 : 0\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": true,
+      "expected_choice": "repeated_meaningful_literal",
+      "rationale": "1000 is the same tier boundary used by tierFor and discountFor; moving the boundary in one function without the other splits the tiers from their discount.",
+      "tags": [
+        "violation",
+        "threshold"
+      ]
+    },
+    {
+      "id": "violation-two-groups-two-functions",
+      "filename": "src/services/tierLabels.ts",
+      "source": "export const f1 = (tier) => {\n  if (tier === 'gold') return 'Gold tier'\n  return 'unknown-tier'\n}\n\nexport const f2 = (tier) => {\n  if (tier === 'silver') return 'Silver tier'\n  return 'unrecognized-tier'\n}\n\nexport const f3 = (tier) => {\n  return tier === 'gold' || tier === 'silver'\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": true,
+      "expected_candidates": 2,
+      "rationale": "'gold' first appears in f1 and 'silver' first appears in f2; both tier names are also checked again in f3, so each name is its own repeated-literal group with its own first-occurrence function.",
+      "tags": [
+        "violation",
+        "multiple-groups"
+      ],
+      "expected_choices": [
+        "repeated_meaningful_literal",
+        "repeated_meaningful_literal"
+      ]
+    },
+    {
+      "id": "ok-module-constant",
+      "filename": "src/services/shippingConstant.ts",
+      "source": "const SHIPPED = 'shipped'\n\nexport const markShipped = (order) => {\n  order.status = SHIPPED\n  return order\n}\n\nexport const isShipped = (order) => {\n  return order.status === SHIPPED\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Both functions reference the module-level SHIPPED constant instead of repeating the 'shipped' literal themselves, so there is no repeated literal to flag.",
+      "tags": [
+        "safe",
+        "module-constant"
+      ]
+    },
+    {
+      "id": "ok-literal-in-one-function-only",
+      "filename": "src/services/describeShipment.ts",
+      "source": "export const describeShipment = (order) => {\n  if (order.status === 'shipped') {\n    console.log('shipped')\n    return 'shipped'\n  }\n  return 'unknown'\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "'shipped' repeats three times, but only inside describeShipment; a literal confined to one function is not the cross-function repetition this rule targets.",
+      "tags": [
+        "safe",
+        "single-function"
+      ]
+    },
+    {
+      "id": "ok-structural-literals",
+      "filename": "src/services/structural.ts",
+      "source": "export const first = () => {\n  const empty = ''\n  const line = `\n`\n  return empty + line + 1 + 0\n}\n\nexport const second = () => {\n  const empty = ''\n  const line = `\n`\n  return empty + line + 0 + 1\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "'', a bare newline, 0, and 1 are all structural literals excluded by the default ignored-literal patterns, regardless of how often they repeat.",
+      "tags": [
+        "safe",
+        "structural"
+      ]
+    },
+    {
+      "id": "ambiguous-common-word",
+      "filename": "src/services/failureLogging.ts",
+      "source": "export const logParseFailure = (raw) => {\n  console.error('Error', 'failed to parse input', raw)\n}\n\nexport const logConfigFailure = (raw) => {\n  console.error('Error', 'failed to parse config', raw)\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": false,
+      "expected_choice": "coincidental_or_structural",
+      "rationale": "'Error' repeats as the first argument of two unrelated log calls; it is a generic word, not a value the two call sites need to keep in sync.",
+      "tags": [
+        "ambiguous",
+        "common-word"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/shipping.spec.ts",
+      "source": "export const markShipped = (order) => {\n  order.status = 'shipped'\n  return order\n}\n\nexport const isShipped = (order) => {\n  return order.status === 'shipped'\n}\n\nexport const labelFor = (status) => {\n  if (status === 'shipped') return 'Shipped'\n  return 'Unknown'\n}\n",
+      "rule_id": "ideology/no-repeated-literals",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

@@ -5,6 +5,7 @@ import { noArgumentMutation } from './rules/noArgumentMutation.ts'
 import { noDecisionsByOmission } from './rules/noDecisionsByOmission.ts'
 import { noHardcodedConfig } from './rules/noHardcodedConfig.ts'
 import { noHiddenState } from './rules/noHiddenState.ts'
+import { noRepeatedLiterals } from './rules/noRepeatedLiterals.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { oneJobPerFunction } from './rules/oneJobPerFunction.ts'
 import { preferComposition } from './rules/preferComposition.ts'
@@ -21,6 +22,7 @@ export const ideology = () =>
       'no-decisions-by-omission': noDecisionsByOmission,
       'no-hardcoded-config': noHardcodedConfig,
       'no-hidden-state': noHiddenState,
+      'no-repeated-literals': noRepeatedLiterals,
       'no-swallowed-errors': noSwallowedErrors,
       'one-job-per-function': oneJobPerFunction,
       'prefer-composition': preferComposition,
