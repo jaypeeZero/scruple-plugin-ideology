@@ -10,6 +10,7 @@ import type {
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
 import { topLevelFunctions } from '../functions.ts'
+import { matchesAny } from '../patterns.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface TranslateAtBoundaryOptions extends DecisionRuleOptions {
@@ -53,10 +54,6 @@ const criteria = {
 
 const finding = 'mixes_decoding_with_domain_logic'
 const message = 'Translate this external format in its own function and pass the typed value in.'
-
-// Matched against a single value (a callee name), so a plain, non-global test suffices.
-const matchesAny = (patterns: RegExp[], value: string): boolean =>
-  patterns.some((pattern) => pattern.test(value))
 
 // Matched against function source, where the same identifier can appear more than once;
 // every distinct matched substring is collected once, in encounter order.

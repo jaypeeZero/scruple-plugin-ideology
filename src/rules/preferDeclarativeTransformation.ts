@@ -11,6 +11,7 @@ import type {
 import { boundedText } from '../bounded.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { loopRegionsWithin } from '../loopRegions.ts'
+import { matchesAny } from '../patterns.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface PreferDeclarativeTransformationOptions extends DecisionRuleOptions {
@@ -43,9 +44,6 @@ interface LoopEvidence {
   kind: string
   source: string
 }
-
-const matchesAny = (patterns: RegExp[], value: string): boolean =>
-  patterns.some((pattern) => pattern.test(value))
 
 export const preferDeclarativeTransformation: RuleFactory<PreferDeclarativeTransformationOptions> = (
   options = {}
