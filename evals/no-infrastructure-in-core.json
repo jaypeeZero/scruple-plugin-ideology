@@ -1,0 +1,143 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-infrastructure-in-core": {
+      "finding": "core_depends_on_infrastructure",
+      "safe": "edge_adapter"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-pg-in-pricing",
+      "filename": "src/services/pricing.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const priceFor = async (sku: string, pool: Pool): Promise<number> => {\n  const result = await pool.query('select base_price, quantity from prices where sku = $1', [sku])\n  const basePrice = result.rows[0].base_price\n  const quantity = result.rows[0].quantity\n  if (quantity >= 100) {\n    return basePrice * 0.8\n  }\n  if (quantity >= 10) {\n    return basePrice * 0.9\n  }\n  return basePrice\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": true,
+      "expected_choice": "core_depends_on_infrastructure",
+      "rationale": "priceFor queries the pg Pool directly and, in the same body, applies a tiered discount to the query result, so pricing policy and the database driver live in one function instead of behind an injected edge.",
+      "tags": [
+        "violation",
+        "pg"
+      ]
+    },
+    {
+      "id": "violation-axios-in-eligibility",
+      "filename": "src/services/eligibility.ts",
+      "source": "import axios from 'axios'\n\nexport const isEligible = async (userId: string) => {\n  const response = await axios.get(`/scores/${userId}`)\n  const creditScore = response.data.score\n  const minimumScore = 650\n  return creditScore >= minimumScore\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": true,
+      "expected_choice": "core_depends_on_infrastructure",
+      "rationale": "isEligible fetches the credit score with axios and then decides eligibility by comparing it to a threshold in the same function, so the HTTP call and the business rule are not separated.",
+      "tags": [
+        "violation",
+        "axios"
+      ]
+    },
+    {
+      "id": "violation-fs-in-domain",
+      "filename": "src/services/taxRates.ts",
+      "source": "import { readFileSync } from 'node:fs'\n\nexport const taxRateFor = (region: string): number => {\n  const rates = JSON.parse(readFileSync('./tax-rates.json', 'utf8'))\n  switch (region) {\n    case 'CA':\n      return rates.CA\n    case 'NY':\n      return rates.NY\n    default:\n      return rates.default\n  }\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": true,
+      "expected_choice": "core_depends_on_infrastructure",
+      "rationale": "taxRateFor reads the rates file directly with node:fs and then branches on the region to pick a rate in the same function, mixing the file read with the tax rule it decides.",
+      "tags": [
+        "violation",
+        "node-fs"
+      ]
+    },
+    {
+      "id": "violation-stripe-in-order-flow",
+      "filename": "src/services/orderFlow.ts",
+      "source": "import Stripe from 'stripe'\n\nexport const placeOrder = async (order: { items: { price: number; quantity: number }[] }, stripe: Stripe) => {\n  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)\n  const freeShippingThreshold = 100\n  const shippingFee = subtotal >= freeShippingThreshold ? 0 : 12\n  const total = subtotal + shippingFee\n  return stripe.charges.create({ amount: total * 100, currency: 'usd' })\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": true,
+      "expected_choice": "core_depends_on_infrastructure",
+      "rationale": "placeOrder computes the subtotal, decides the free-shipping threshold, and totals the order, then hands that total straight to Stripe's charge creation in the same body, so the pricing and shipping rules travel with the payment client instead of behind an edge.",
+      "tags": [
+        "violation",
+        "stripe"
+      ]
+    },
+    {
+      "id": "ok-repository-adapter",
+      "filename": "src/services/userRepository.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const findUser = async (id: string, pool: Pool): Promise<{ id: string; name: string; email: string } | null> => {\n  const result = await pool.query('select id, name, email from users where id = $1', [id])\n  const row = result.rows[0]\n  if (!row) return null\n  return { id: row.id, name: row.name, email: row.email }\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_candidates": 1,
+      "expected_choice": "edge_adapter",
+      "rationale": "findUser's whole job is querying pg and mapping the row to a domain User; the guard that returns null when no row is found is adapting a missing result, not a business rule, even though `if (!row) return null` is enough of a branch to make the function a candidate.",
+      "tags": [
+        "safe",
+        "repository-adapter"
+      ]
+    },
+    {
+      "id": "ok-route-handler",
+      "filename": "src/services/userHandler.ts",
+      "source": "import express from 'express'\n\nexport const deactivateUserHandler = async (\n  req: express.Request,\n  res: express.Response,\n  service: { deactivate: (id: string) => Promise<boolean> }\n) => {\n  const deactivated = await service.deactivate(req.params.id)\n  if (!deactivated) {\n    return res.status(404).send()\n  }\n  return res.status(200).send()\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_choice": "edge_adapter",
+      "rationale": "The handler delegates the actual decision to service.deactivate and only maps its result to an HTTP status; branching on the outcome to pick 200 or 404 is the adapter's job, not a business rule made against express.",
+      "tags": [
+        "safe",
+        "route-handler"
+      ]
+    },
+    {
+      "id": "ok-pure-domain-no-infra-import",
+      "filename": "src/services/purePricing.ts",
+      "source": "export const priceFor = (basePrice: number, quantity: number): number => {\n  if (quantity >= 100) {\n    return basePrice * 0.8\n  }\n  return basePrice\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The file imports nothing, so there is no infrastructure package for any function to depend on; the rule produces no candidates at all regardless of the pricing logic's own branching.",
+      "tags": [
+        "safe",
+        "no-import"
+      ]
+    },
+    {
+      "id": "ok-type-only-import",
+      "filename": "src/services/typedPricing.ts",
+      "source": "import type { Pool } from 'pg'\n\nexport const priceFor = (sku: string, pool: Pool, basePrice: number, quantity: number): number => {\n  return basePrice * quantity\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_candidates": 1,
+      "expected_choice": "infrastructure_type_only",
+      "rationale": "oxc keeps a type-only import's specifier in ParsedDocument.imports, so `Pool` is still an infrastructure binding and the function still references it (as a parameter's type annotation), giving one candidate; the pool parameter itself is never called or otherwise used as a value, so the binding is only a type, not a dependency the function reaches into.",
+      "tags": [
+        "safe",
+        "type-only-import"
+      ]
+    },
+    {
+      "id": "ok-composition-root",
+      "filename": "src/index.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const priceFor = async (sku: string, pool: Pool): Promise<number> => {\n  const result = await pool.query('select base_price, quantity from prices where sku = $1', [sku])\n  const basePrice = result.rows[0].base_price\n  const quantity = result.rows[0].quantity\n  if (quantity >= 100) {\n    return basePrice * 0.8\n  }\n  if (quantity >= 10) {\n    return basePrice * 0.9\n  }\n  return basePrice\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default composition root pattern, so the rule produces no candidates regardless of the same pricing-and-pg content that is a finding elsewhere.",
+      "tags": [
+        "safe",
+        "composition-root"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/pricing.spec.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const priceFor = async (sku: string, pool: Pool): Promise<number> => {\n  const result = await pool.query('select base_price, quantity from prices where sku = $1', [sku])\n  const basePrice = result.rows[0].base_price\n  const quantity = result.rows[0].quantity\n  if (quantity >= 100) {\n    return basePrice * 0.8\n  }\n  if (quantity >= 10) {\n    return basePrice * 0.9\n  }\n  return basePrice\n}\n",
+      "rule_id": "ideology/no-infrastructure-in-core",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
