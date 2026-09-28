@@ -52,6 +52,7 @@ export default defineConfig({
     'ideology/no-hidden-state': 'warn',
     'ideology/no-swallowed-errors': 'warn',
     'ideology/one-job-per-function': 'warn',
+    'ideology/prefer-composition': 'warn',
     'ideology/prefer-declarative-transformation': 'warn',
     'ideology/prefer-simple-construct': 'warn',
     'ideology/translate-at-boundary': 'warn'
@@ -71,6 +72,7 @@ export default defineConfig({
 | `no-hidden-state` | Pure functions, explicit inputs, no hidden state. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-swallowed-errors` | Errors bubble up. Only catch when recovery is possible and the rest can still run. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `one-job-per-function` | Each function, class, module, and layer has one obvious job. If it does too much, split it. | `testFilePattern` (shared default, see below), `minLines` (`40`), `ioCallPatterns` (`['^(fetch\|axios\|got)\b', '\.(query\|execute\|find\w*\|save\|insert\|update\|delete\|put\w*\|get\w*Object\|send\|publish\|subscribe\|readFile\w*\|writeFile\w*\|connect)$']`), `presentationCallPatterns` (`['^(console\|logger\|log)\.', '\.(toFixed\|toLocale\w+\|padStart\|padEnd\|format\|render)$']`), `validationCallPatterns` (`['\.(validate\|assert\w*\|check\w*\|is[A-Z]\w*)$', '^(assert\|invariant\|z\.\|yup\.\|joi\.)']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
+| `prefer-composition` | Small, focused functions combine into complex transformations. Compose functionality. | `testFilePattern` (shared default, see below), `minSteps` (`3`), `minNesting` (`4`), `minChain` (`5`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-declarative-transformation` | Declarative transformations over imperative loops. | `testFilePattern` (shared default, see below), `effectCallPatterns` (`['\.forEach$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-simple-construct` | Never choose a clever solution when a simple one handles the same requirement. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `translate-at-boundary` | Translate external formats at boundaries, not in core logic. | `testFilePattern` (shared default, see below), `parseCallPatterns` (`['^JSON\.parse$', '^parseInt$', '^parseFloat$', '^Number$', '^Date\.parse$', '\.split$', '\.validate(Async)?$', '\.parse$']`), `externalShapePatterns` (`['\b(payload\|query\|headers\|params\|body\|statusCode)\b', '\breq(uest)?\.', '\bres(ponse)?\.(data\|body)\b', '\brow(s)?\b']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |

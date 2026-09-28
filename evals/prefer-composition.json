@@ -1,0 +1,141 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/prefer-composition": {
+      "finding": "inlines_composable_steps",
+      "safe": "already_composed"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-let-reassign-chain",
+      "filename": "src/services/slug.ts",
+      "source": "export const slugify = (input) => {\n  let s = input\n  s = s.trim()\n  s = s.toLowerCase()\n  s = s.replace(/\\s+/g, '-')\n  s = s.slice(0, 40)\n  return s\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": true,
+      "expected_choice": "inlines_composable_steps",
+      "rationale": "slugify threads input through four sequential reassignments of the same binding, each a nameable transformation (trim, lowercase, replace, slice) that could stand alone.",
+      "tags": [
+        "violation",
+        "reassignment"
+      ]
+    },
+    {
+      "id": "violation-const-chain",
+      "filename": "src/services/process.ts",
+      "source": "export const process = (raw) => {\n  const parsed = Number(raw)\n  const doubled = parsed * 2\n  const clamped = Math.min(doubled, 100)\n  const label = `Result: ${clamped}`\n  return label\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": true,
+      "expected_choice": "inlines_composable_steps",
+      "rationale": "Four consecutive const declarations, each referencing only the binding immediately before it, thread raw through parse, double, clamp, and format as one inline recipe.",
+      "tags": [
+        "violation",
+        "const-chain"
+      ]
+    },
+    {
+      "id": "violation-pyramid",
+      "filename": "src/services/transform.ts",
+      "source": "export const transform = (raw) => {\n  const parse = (value) => Number(value)\n  const double = (value) => value * 2\n  const clamp = (value) => Math.min(value, 100)\n  const toString = (value) => `Result: ${value}`\n  return toString(clamp(double(parse(raw))))\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": true,
+      "expected_choice": "inlines_composable_steps",
+      "rationale": "The four locally defined steps are already named, but the return statement inlines their composition as a four-deep call pyramid instead of composing them with a pipe or reduce.",
+      "tags": [
+        "violation",
+        "pyramid"
+      ]
+    },
+    {
+      "id": "violation-inline-lambda-steps",
+      "filename": "src/services/formatOrderTotal.ts",
+      "source": "export const formatOrderTotal = (order) => {\n  let value = order.rawTotal\n  value = normalizeWhitespace(value)\n  value = applyDiscount(value, order.discountRate)\n  value = addTax(value, order.taxRate)\n  value = Math.round(value)\n  value = formatCurrency(value)\n  return value\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": true,
+      "expected_choice": "inlines_composable_steps",
+      "rationale": "Five distinct order-formatting steps (normalize, discount, tax, round, format) are chained through reassignments of the same binding instead of being composed as named functions.",
+      "tags": [
+        "violation",
+        "reassignment"
+      ]
+    },
+    {
+      "id": "ok-named-helpers",
+      "filename": "src/services/math.ts",
+      "source": "export const parse = (raw) => Number(raw)\nexport const double = (value) => value * 2\nexport const toString = (value) => `Result: ${value}`\nexport const process = (raw) => toString(double(parse(raw)))\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "process composes three sibling named helpers through exactly three levels of nesting, one below the default pyramid threshold of four, so the collector finds no evidence at all.",
+      "tags": [
+        "safe",
+        "named-helpers"
+      ]
+    },
+    {
+      "id": "ok-long-declarative-chain",
+      "filename": "src/services/topTen.ts",
+      "source": "export const topTen = (items) => {\n  return items\n    .filter(x => x.active)\n    .map(x => x.value)\n    .filter(x => x > 0)\n    .sort((a, b) => a - b)\n    .slice(0, 10)\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_choice": "already_composed",
+      "rationale": "The five-call method chain is already composition: each link is a named, intent-revealing array method, so the long chain is evidence but not the violation.",
+      "tags": [
+        "safe",
+        "method-chain"
+      ]
+    },
+    {
+      "id": "ok-single-formula",
+      "filename": "src/services/withTax.ts",
+      "source": "export const withTax = (net, rate) => {\n  const gross = net * (1 + rate)\n  const rounded = Math.round(gross * 100) / 100\n  return rounded\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Two steps computing one tax formula fall below the three-step reassignment threshold and never reach a four-deep call pyramid, so no evidence is produced.",
+      "tags": [
+        "safe",
+        "single-formula"
+      ]
+    },
+    {
+      "id": "ok-object-build",
+      "filename": "src/services/buildSummary.ts",
+      "source": "export const buildSummary = (order) => {\n  const id = order.id\n  const total = order.total\n  const status = order.status\n  const createdAt = order.createdAt\n  return { id, total, status, createdAt }\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Each const reads directly from order rather than from the previous binding, so no chain forms even though four declarations appear in sequence.",
+      "tags": [
+        "safe",
+        "object-build"
+      ]
+    },
+    {
+      "id": "ambiguous-two-reassign-then-return",
+      "filename": "src/services/tokens.ts",
+      "source": "export const tokens = (raw) => {\n  let v = raw.trim()\n  v = v.toLowerCase()\n  return v.split(',')\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Only one reassignment follows the initial let, one short of the default minSteps of three; a lower minSteps option would turn this into a candidate.",
+      "tags": [
+        "ambiguous",
+        "reassignment"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/slug.spec.ts",
+      "source": "export const slugify = (input) => {\n  let s = input\n  s = s.trim()\n  s = s.toLowerCase()\n  s = s.replace(/\\s+/g, '-')\n  s = s.slice(0, 40)\n  return s\n}\n",
+      "rule_id": "ideology/prefer-composition",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates regardless of the reassignment chain inside.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

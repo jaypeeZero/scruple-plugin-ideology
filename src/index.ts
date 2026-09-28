@@ -7,6 +7,7 @@ import { noHardcodedConfig } from './rules/noHardcodedConfig.ts'
 import { noHiddenState } from './rules/noHiddenState.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { oneJobPerFunction } from './rules/oneJobPerFunction.ts'
+import { preferComposition } from './rules/preferComposition.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
 import { preferSimpleConstruct } from './rules/preferSimpleConstruct.ts'
 import { translateAtBoundary } from './rules/translateAtBoundary.ts'
@@ -22,6 +23,7 @@ export const ideology = () =>
       'no-hidden-state': noHiddenState,
       'no-swallowed-errors': noSwallowedErrors,
       'one-job-per-function': oneJobPerFunction,
+      'prefer-composition': preferComposition,
       'prefer-declarative-transformation': preferDeclarativeTransformation,
       'prefer-simple-construct': preferSimpleConstruct,
       'translate-at-boundary': translateAtBoundary
