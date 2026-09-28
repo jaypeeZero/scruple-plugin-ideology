@@ -1,0 +1,154 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-decisions-by-omission": {
+      "finding": "decision_left_by_omission",
+      "safe": "deliberate_with_stated_reason"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-as-any",
+      "filename": "src/services/orderTotals.ts",
+      "source": "export const totalOf = (order) => {\n  const total = (order as any).grandTotal\n  return total\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "Casting through `any` silences the type checker instead of narrowing the value, so the function compiles without the caller ever proving `order` has a `grandTotal`.",
+      "tags": [
+        "violation",
+        "any"
+      ]
+    },
+    {
+      "id": "violation-ts-ignore-no-reason",
+      "filename": "src/services/notifier.ts",
+      "source": "export const notify = (user) => {\n  // @ts-ignore\n  user.send()\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "The bare `@ts-ignore` silences whatever the checker was about to flag with no explanation of why that is safe.",
+      "tags": [
+        "violation",
+        "ts-ignore"
+      ]
+    },
+    {
+      "id": "violation-eslint-disable-no-reason",
+      "filename": "src/services/rowParser.ts",
+      "source": "export const parseRow = (row) => {\n  // eslint-disable-next-line no-unused-vars\n  const x = row\n  return x\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "Disabling the lint rule with no stated reason hides why the flagged code is actually fine.",
+      "tags": [
+        "violation",
+        "eslint-disable"
+      ]
+    },
+    {
+      "id": "violation-todo-as-implementation",
+      "filename": "src/services/refunds.ts",
+      "source": "export const refund = (order) => {\n  // TODO: implement refunds\n  return order\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "The TODO stands in for the actual refund behaviour, so callers get the input echoed back with no indication anything is unfinished.",
+      "tags": [
+        "violation",
+        "todo"
+      ]
+    },
+    {
+      "id": "violation-not-implemented",
+      "filename": "src/services/cancellations.ts",
+      "source": "export const cancel = (order) => {\n  throw new Error('not implemented')\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "A bare not-implemented throw defers the real decision about what cancelling an order does to some future change.",
+      "tags": [
+        "violation",
+        "not-implemented"
+      ]
+    },
+    {
+      "id": "violation-silent-default",
+      "filename": "src/services/statusLabels.ts",
+      "source": "export const labelFor = (status) => {\n  switch (status) {\n    case 'a':\n      return 'Alpha'\n    case 'b':\n      return 'Beta'\n    default:\n      break\n  }\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "The default branch does nothing and falls through to an implicit `undefined`, leaving the decision of what an unrecognized status should render unmade.",
+      "tags": [
+        "violation",
+        "silent-default"
+      ]
+    },
+    {
+      "id": "ok-ts-expect-error-with-reason",
+      "filename": "src/services/abortableFetch.ts",
+      "source": "export const abortable = (fn) => {\n  // @ts-expect-error -- upstream types omit `signal`; tracked in the library\n  return fn({ signal: null })\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": false,
+      "expected_choice": "deliberate_with_stated_reason",
+      "rationale": "The suppression states exactly why it is safe and points to where the upstream gap is tracked, so the decision was made deliberately rather than deferred.",
+      "tags": [
+        "safe",
+        "ts-expect-error"
+      ]
+    },
+    {
+      "id": "ok-exhaustive-default-throws",
+      "filename": "src/services/statusExhaustive.ts",
+      "source": "export const labelFor = (status) => {\n  switch (status) {\n    case 'a':\n      return 'Alpha'\n    default: {\n      const _exhaustive: never = status\n      throw new Error(`Unhandled status: ${status}`)\n    }\n  }\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The default branch opens a block that asserts exhaustiveness with a `never` binding and throws, so nothing is silently skipped; the `default:\\s*(break|return)?$` pattern does not match a block.",
+      "tags": [
+        "safe",
+        "exhaustive-default"
+      ]
+    },
+    {
+      "id": "ok-boundary-cast-with-check",
+      "filename": "src/services/orderParser.ts",
+      "source": "export const parseOrder = (raw) => {\n  const body = JSON.parse(raw) as unknown\n  if (!isOrder(body)) throw new Error('invalid order')\n  return body\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The value is cast to `unknown` right after crossing the JSON boundary and is narrowed by a runtime check before use; `as unknown` alone, without a further `as`, is not evidence of an omitted decision.",
+      "tags": [
+        "safe",
+        "boundary-cast"
+      ]
+    },
+    {
+      "id": "ambiguous-non-null-assertion",
+      "filename": "src/services/profiles.ts",
+      "source": "export const profileOf = (id, cache) => {\n  const user = cache.get(id)!.profile\n  return user\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": true,
+      "expected_choice": "decision_left_by_omission",
+      "rationale": "The non-null assertion asserts the cache always hits with no comment explaining why a miss can never happen here.",
+      "tags": [
+        "ambiguous",
+        "non-null-assertion"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/orderTotals.spec.ts",
+      "source": "export const totalOf = (order) => {\n  const total = (order as any).grandTotal\n  return total\n}\n",
+      "rule_id": "ideology/no-decisions-by-omission",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
