@@ -48,6 +48,7 @@ export default defineConfig({
     'ideology/model-absence': 'warn',
     'ideology/no-argument-mutation': 'warn',
     'ideology/no-hidden-state': 'warn',
+    'ideology/no-swallowed-errors': 'warn',
     'ideology/prefer-declarative-transformation': 'warn',
     'ideology/translate-at-boundary': 'warn'
   }
@@ -62,13 +63,14 @@ export default defineConfig({
 | `model-absence` | Model absence, don't default it. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-argument-mutation` | Do not mutate inputs; return a new value instead. | `testFilePattern` (shared default, see below), `mutatingMethodPatterns` (`['^(push\|pop\|shift\|unshift\|splice\|sort\|reverse\|fill\|copyWithin\|set\|delete\|clear\|add)$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-hidden-state` | Pure functions, explicit inputs, no hidden state. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
+| `no-swallowed-errors` | Errors bubble up. Only catch when recovery is possible and the rest can still run. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-declarative-transformation` | Declarative transformations over imperative loops. | `testFilePattern` (shared default, see below), `effectCallPatterns` (`['\.forEach$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `translate-at-boundary` | Translate external formats at boundaries, not in core logic. | `testFilePattern` (shared default, see below), `parseCallPatterns` (`['^JSON\.parse$', '^parseInt$', '^parseFloat$', '^Number$', '^Date\.parse$', '\.split$', '\.validate(Async)?$', '\.parse$']`), `externalShapePatterns` (`['\b(payload\|query\|headers\|params\|body\|statusCode)\b', '\breq(uest)?\.', '\bres(ponse)?\.(data\|body)\b', '\brow(s)?\b']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 
 ## Shared behaviours
 
 - Every rule's `testFilePattern` defaults to `(\.(spec|test)|[Ff]akes?|[Dd]oubles?|[Mm]ocks?|[Ss]tubs?)\.[cm]?[jt]sx?$`.
-- Every rule walks top-level functions only.
+- Every rule walks top-level functions only, except `no-swallowed-errors`, which walks catch blocks.
 - Every rule scopes by code content, never by directory layout.
 - An approved exception is recorded at the site, not in configuration:
 

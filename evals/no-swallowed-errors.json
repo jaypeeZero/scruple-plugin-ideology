@@ -1,0 +1,170 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-swallowed-errors": {
+      "finding": "swallows_or_masks_error",
+      "safe": "recovers_and_continues"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-empty-catch",
+      "filename": "src/services/persist.ts",
+      "source": "export const persist = async (x, save) => {\n  try {\n    await save(x)\n  } catch {}\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "The empty catch block discards the error entirely; the caller has no way to know save(x) failed.",
+      "tags": [
+        "violation",
+        "empty-catch"
+      ]
+    },
+    {
+      "id": "violation-log-rethrow",
+      "filename": "src/services/persistLogged.ts",
+      "source": "export const persist = async (x, save) => {\n  try {\n    await save(x)\n  } catch (e) {\n    console.error('save failed', e)\n    throw e\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "Logging and rethrowing the same error adds a side effect without changing what the caller receives, and is the canonical catch-log-rethrow anti-pattern.",
+      "tags": [
+        "violation",
+        "log-rethrow"
+      ]
+    },
+    {
+      "id": "violation-return-null",
+      "filename": "src/services/getUser.ts",
+      "source": "export const getUser = async (id, repo) => {\n  try {\n    return await repo.find(id)\n  } catch (e) {\n    return null\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "Returning null on failure makes a lookup error indistinguishable from a normal not-found result.",
+      "tags": [
+        "violation",
+        "return-null"
+      ]
+    },
+    {
+      "id": "violation-return-empty-array",
+      "filename": "src/services/listOrders.ts",
+      "source": "export const listOrders = async (repo) => {\n  try {\n    return await repo.all()\n  } catch (e) {\n    return []\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "Returning an empty array on failure hides the fact that the orders could not be loaded at all, making it look like there are simply none.",
+      "tags": [
+        "violation",
+        "return-empty-array"
+      ]
+    },
+    {
+      "id": "violation-return-false",
+      "filename": "src/services/isEligible.ts",
+      "source": "export const isEligible = async (user, check) => {\n  try {\n    return await check(user)\n  } catch (e) {\n    return false\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "Returning false on failure makes a broken eligibility check indistinguishable from a genuine ineligible result.",
+      "tags": [
+        "violation",
+        "return-false"
+      ]
+    },
+    {
+      "id": "ok-per-item-failure",
+      "filename": "src/services/validate.ts",
+      "source": "export const validate = (item, rule) => {\n  try {\n    rule(item)\n    return { item, ok: true }\n  } catch (e) {\n    return { item, error: String(e) }\n  }\n}\n\nexport const validateAll = (items, rule) => items.map((item) => validate(item, rule))\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_choice": "recovers_and_continues",
+      "rationale": "validate records the failure against the specific item and returns it, so validateAll can keep processing the rest of the batch instead of stopping on the first bad item.",
+      "tags": [
+        "safe",
+        "per-item-failure"
+      ]
+    },
+    {
+      "id": "ok-route-handler",
+      "filename": "src/routes/deactivate.ts",
+      "source": "import express from 'express'\n\nconst app = express()\n\napp.post('/users/:id/deactivate', async (req, res) => {\n  try {\n    await deactivateUser(req.params.id)\n    res.status(204).end()\n  } catch (e) {\n    res.status(500).json({ error: 'failed to deactivate' })\n  }\n})\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_choice": "handles_at_entry_point",
+      "rationale": "This is an Express route handler, the entry point where an unhandled failure has to become an HTTP response; turning the error into a 500 is its job, not a swallow.",
+      "tags": [
+        "safe",
+        "entry-point",
+        "route-handler"
+      ]
+    },
+    {
+      "id": "ok-main",
+      "filename": "src/main.ts",
+      "source": "export const main = async () => {\n  try {\n    await run()\n  } catch (e) {\n    console.error(e)\n    process.exitCode = 1\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_choice": "handles_at_entry_point",
+      "rationale": "main is the process entry point; logging the error and setting a nonzero exit code is how a failure surfaces here, since there is no further caller to propagate to.",
+      "tags": [
+        "safe",
+        "entry-point",
+        "main"
+      ]
+    },
+    {
+      "id": "ok-translate-and-rethrow",
+      "filename": "src/services/chargeCard.ts",
+      "source": "export const chargeCard = async (order, gateway) => {\n  try {\n    return await gateway.charge(order)\n  } catch (e) {\n    throw new PaymentDeclinedError(order.id, { cause: e })\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_choice": "recovers_and_continues",
+      "rationale": "The handler translates a generic gateway error into a richer, domain-specific PaymentDeclinedError and rethrows it with the original as cause, so the failure still propagates with more information rather than being hidden.",
+      "tags": [
+        "safe",
+        "translate-and-rethrow"
+      ]
+    },
+    {
+      "id": "ok-finally-cleanup",
+      "filename": "src/services/withConn.ts",
+      "source": "export const withConn = async (fn, conn) => {\n  try {\n    return await fn(conn)\n  } finally {\n    await conn.close()\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "A bare try/finally with no catch clause has no catch to swallow anything in: the parser (oxc, verified directly) reports zero document.errorHandlers for this shape, since ErrorHandlerTarget models catch clauses, not finally blocks. The error still propagates unchanged; the collector produces no candidate at all rather than a cleanup_only one.",
+      "tags": [
+        "safe",
+        "finally-cleanup",
+        "no-catch"
+      ]
+    },
+    {
+      "id": "ambiguous-middle-layer-fallback",
+      "filename": "src/services/loadConfig.ts",
+      "source": "export const loadConfig = (read) => {\n  try {\n    return JSON.parse(read())\n  } catch (e) {\n    return defaultConfig\n  }\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": true,
+      "expected_choice": "swallows_or_masks_error",
+      "rationale": "loadConfig is a middle layer, not an entry point, and falling back to defaultConfig on any failure hides a real problem (the file is missing, unreadable, or invalid JSON) behind what looks like ordinary default behavior.",
+      "tags": [
+        "ambiguous",
+        "middle-layer-fallback"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/persist.spec.ts",
+      "source": "export const persist = async (x, save) => {\n  try {\n    await save(x)\n  } catch {}\n}\n",
+      "rule_id": "ideology/no-swallowed-errors",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

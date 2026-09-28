@@ -3,6 +3,7 @@ import { injectDependencies } from './rules/injectDependencies.ts'
 import { modelAbsence } from './rules/modelAbsence.ts'
 import { noArgumentMutation } from './rules/noArgumentMutation.ts'
 import { noHiddenState } from './rules/noHiddenState.ts'
+import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
 import { translateAtBoundary } from './rules/translateAtBoundary.ts'
 
@@ -13,6 +14,7 @@ export const ideology = () =>
       'model-absence': modelAbsence,
       'no-argument-mutation': noArgumentMutation,
       'no-hidden-state': noHiddenState,
+      'no-swallowed-errors': noSwallowedErrors,
       'prefer-declarative-transformation': preferDeclarativeTransformation,
       'translate-at-boundary': translateAtBoundary
     }
