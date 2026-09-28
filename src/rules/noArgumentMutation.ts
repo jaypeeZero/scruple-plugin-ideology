@@ -11,7 +11,7 @@ import type {
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
 import { topLevelFunctions } from '../functions.ts'
-import { parameterListText } from '../parameters.ts'
+import { boundNames, parameterListText, splitTopLevelParams } from '../parameters.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface NoArgumentMutationOptions extends DecisionRuleOptions {
@@ -39,56 +39,6 @@ const criteria = {
 
 const finding = 'mutates_parameter'
 const message = 'Return a new value instead of mutating this parameter.'
-
-// Splits a parameter list (or a destructuring pattern's inner text) on its
-// top-level commas, tracking bracket depth so a nested object, array, or
-// default-value literal never breaks a single parameter in two.
-const splitTopLevelParams = (text: string): string[] => {
-  const parts: string[] = []
-  let depth = 0
-  let current = ''
-  for (const char of text) {
-    if (char === '(' || char === '[' || char === '{') depth++
-    else if (char === ')' || char === ']' || char === '}') depth--
-
-    if (char === ',' && depth === 0) {
-      parts.push(current)
-      current = ''
-    } else {
-      current += char
-    }
-  }
-  if (current.trim() !== '') parts.push(current)
-  return parts
-}
-
-// A destructured parameter contributes every bound identifier: the shorthand
-// name (`{ a }`), the rename target rather than the object key (`{ a: b }`
-// binds `b`, not `a`), array elements, and rest elements, recursively.
-const boundNames = (segment: string): string[] => {
-  const trimmed = segment.trim()
-
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    const isObject = trimmed.startsWith('{')
-    const closeIndex = trimmed.lastIndexOf(isObject ? '}' : ']')
-    const inner = trimmed.slice(1, closeIndex === -1 ? trimmed.length : closeIndex)
-
-    return splitTopLevelParams(inner).flatMap((part) => {
-      const piece = part.split('=')[0]?.trim() ?? ''
-      if (piece === '') return []
-      if (piece.startsWith('...')) return boundNames(piece.slice(3))
-      if (isObject) {
-        const colonIndex = piece.indexOf(':')
-        return boundNames(colonIndex === -1 ? piece : piece.slice(colonIndex + 1))
-      }
-      return boundNames(piece)
-    })
-  }
-
-  const match = /^\.\.\.\s*([A-Za-z_$][\w$]*)|^([A-Za-z_$][\w$]*)/.exec(trimmed)
-  const name = match ? match[1] ?? match[2] : undefined
-  return name ? [name] : []
-}
 
 const parameterNames = (source: string): string[] =>
   splitTopLevelParams(parameterListText(source)).flatMap(boundNames)

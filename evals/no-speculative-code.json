@@ -1,0 +1,154 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-speculative-code": {
+      "finding": "speculative_flexibility",
+      "safe": "flexibility_is_exercised"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-unread-options",
+      "filename": "src/services/mail.ts",
+      "source": "export const sendEmail = (to, body, options: { cc?: string; bcc?: string; priority?: number }) => {\n  return `sending to ${to}: ${body}`\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": true,
+      "expected_choice": "speculative_flexibility",
+      "rationale": "The options parameter declares three keys and the body never reads any of them, so the flexibility could be deleted with no visible change.",
+      "tags": [
+        "violation",
+        "unread-options"
+      ]
+    },
+    {
+      "id": "violation-flag-parameter",
+      "filename": "src/services/format.ts",
+      "source": "export const format = (value, asCurrency: boolean) => {\n  if (asCurrency) {\n    return `$${value.toFixed(2)}`\n  }\n  return `${value}`\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": true,
+      "expected_choice": "speculative_flexibility",
+      "rationale": "asCurrency splits the function into two unrelated formatting bodies with nothing shared between them, so it reads as two functions wearing one signature.",
+      "tags": [
+        "violation",
+        "flag-parameter"
+      ]
+    },
+    {
+      "id": "violation-literal-condition",
+      "filename": "src/services/run.ts",
+      "source": "export const run = () => {\n  if (false) {\n    legacyPath()\n  }\n  return mainPath()\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": true,
+      "expected_choice": "speculative_flexibility",
+      "rationale": "`if (false)` can never take its branch, so the call to legacyPath and the branch around it are dead weight that always resolves to mainPath.",
+      "tags": [
+        "violation",
+        "literal-condition"
+      ]
+    },
+    {
+      "id": "violation-default-callback",
+      "filename": "src/services/retry.ts",
+      "source": "export const retry = (fn, onRetry = () => {}) => {\n  try {\n    return fn()\n  } catch (error) {\n    onRetry(error)\n    throw error\n  }\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": true,
+      "expected_choice": "speculative_flexibility",
+      "rationale": "No caller in this file ever passes a real onRetry, so the hook exists only to call a no-op default.",
+      "tags": [
+        "violation",
+        "default-callback"
+      ]
+    },
+    {
+      "id": "violation-unused-generic",
+      "filename": "src/services/first.ts",
+      "source": "export const first = <T>(items: unknown[]) => items[0] as T\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": true,
+      "expected_choice": "speculative_flexibility",
+      "rationale": "T appears only in the return cast and constrains nothing else in the signature, so the generic buys no type safety over `unknown`.",
+      "tags": [
+        "violation",
+        "unused-generic"
+      ]
+    },
+    {
+      "id": "ok-options-read",
+      "filename": "src/services/paginate.ts",
+      "source": "export const paginate = (items, { page, size }) => {\n  return items.slice((page - 1) * size, page * size)\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Both destructured keys, page and size, are read to compute the slice bounds, so nothing about this parameter is speculative.",
+      "tags": [
+        "safe",
+        "options-read"
+      ]
+    },
+    {
+      "id": "ok-adapter-pass-through",
+      "filename": "src/services/toDomain.ts",
+      "source": "export const toDomain = (row) => mapRow(row)\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_choice": "flexibility_is_exercised",
+      "rationale": "Passing row straight to mapRow is this adapter's entire job; there is no behaviour left to add, so the pass-through is the point, not waste.",
+      "tags": [
+        "safe",
+        "pass-through"
+      ]
+    },
+    {
+      "id": "ok-generic-two-positions",
+      "filename": "src/services/identity.ts",
+      "source": "export const identity = <T>(value: T): T => value\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "T constrains both the parameter and the return type, tying them together, so it is doing real work even though it never appears in a wider signature.",
+      "tags": [
+        "safe",
+        "generic-constraint"
+      ]
+    },
+    {
+      "id": "ok-flag-from-input",
+      "filename": "src/services/render.ts",
+      "source": "export const render = (item, compact: boolean) => {\n  const label = compact ? 'Compact' : 'Full'\n  if (compact) {\n    return `${label}: ${item.summary}`\n  }\n  return `${label}: ${item.summary} - ${item.details}`\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_choice": "flexibility_is_exercised",
+      "rationale": "compact selects a presentation density from real caller input, and both branches share the same label setup; it is a parameter, not a sign the function should be split in two.",
+      "tags": [
+        "safe",
+        "flag-parameter"
+      ]
+    },
+    {
+      "id": "ambiguous-exported-options",
+      "filename": "src/services/createClient.ts",
+      "source": "export const createClient = (options: { retries?: number; timeoutMs?: number; baseUrl?: string; keepAlive?: boolean }) => {\n  return options.baseUrl\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_choice": "public_api_surface_by_contract",
+      "rationale": "createClient is an exported constructor whose options type is a published contract; retries, timeoutMs, and keepAlive being unread in this file does not mean no caller relies on them.",
+      "tags": [
+        "ambiguous",
+        "exported-options"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/mail.spec.ts",
+      "source": "export const sendEmail = (to, body, options: { cc?: string; bcc?: string; priority?: number }) => {\n  return `sending to ${to}: ${body}`\n}\n",
+      "rule_id": "ideology/no-speculative-code",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
