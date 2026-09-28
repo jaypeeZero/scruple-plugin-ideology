@@ -1,0 +1,167 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/no-hardcoded-config": {
+      "finding": "hardcodes_deploy_specific_value",
+      "safe": "fixed_protocol_constant"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-api-key-literal",
+      "filename": "src/services/billing.ts",
+      "source": "export const charge = () => {\n  const apiKey = 'sk-live-51H8xJ2eZvKYlo2C'\n  return apiKey\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": true,
+      "expected_choice": "hardcodes_deploy_specific_value",
+      "rationale": "The API key is a live credential written as a literal; it must come from configuration and never be committed.",
+      "tags": [
+        "violation",
+        "credential"
+      ]
+    },
+    {
+      "id": "violation-connection-string",
+      "filename": "src/services/db.ts",
+      "source": "export const openDb = () => {\n  return connect('postgres://app:pw@db.internal:5432/app')\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": true,
+      "expected_choice": "hardcodes_deploy_specific_value",
+      "rationale": "The connection string names a specific host, credentials, and database, all of which differ between deployments.",
+      "tags": [
+        "violation",
+        "connection-string"
+      ]
+    },
+    {
+      "id": "violation-base-url",
+      "filename": "src/services/charges.ts",
+      "source": "export const createCharge = () => {\n  return fetch('https://api.payments.example.com/v2/charges')\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": true,
+      "expected_choice": "hardcodes_deploy_specific_value",
+      "rationale": "The base URL of the payments API is deploy-specific and should be injected rather than baked into the function.",
+      "tags": [
+        "violation",
+        "url"
+      ]
+    },
+    {
+      "id": "violation-env-read-in-core",
+      "filename": "src/services/pricing.ts",
+      "source": "export const pricingFor = (item) => {\n  const region = process.env.AWS_REGION\n  return { item, region }\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": true,
+      "expected_choice": "hardcodes_deploy_specific_value",
+      "rationale": "pricingFor reads process.env directly inside business logic instead of receiving the region as a parameter from a composition root.",
+      "tags": [
+        "violation",
+        "env-read"
+      ]
+    },
+    {
+      "id": "violation-bucket-name",
+      "filename": "src/services/invoices.ts",
+      "source": "export const storeInvoice = (invoice) => {\n  s3.putObject({ Bucket: 'prod-invoices' })\n  return invoice\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": true,
+      "expected_choice": "hardcodes_deploy_specific_value",
+      "rationale": "The bucket name is environment-specific (a 'prod' bucket implies a 'staging' or 'dev' counterpart elsewhere) and should be configured, not hardcoded.",
+      "tags": [
+        "violation",
+        "bucket"
+      ]
+    },
+    {
+      "id": "ok-composition-root",
+      "filename": "src/index.ts",
+      "source": "export const openDb = () => {\n  return connect('postgres://app:pw@db.internal:5432/app')\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the composition-root pattern, where reading configuration is the function's job, so the rule produces no candidates regardless of content.",
+      "tags": [
+        "safe",
+        "composition-root"
+      ]
+    },
+    {
+      "id": "ok-content-type",
+      "filename": "src/services/response.ts",
+      "source": "export const toResponse = (body) => {\n  const headers = {}\n  headers['content-type'] = 'application/json'\n  return { headers, body }\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "Running collect on this source shows 'application/json' trips none of the default configLiteralPatterns (no scheme, no localhost, no credential prefix, no domain suffix, no database scheme) and 'content-type' is not a configNamePatterns identifier, so the rule finds no evidence at all.",
+      "tags": [
+        "safe",
+        "media-type"
+      ]
+    },
+    {
+      "id": "ok-xml-namespace",
+      "filename": "src/services/svg.ts",
+      "source": "export const svgRoot = () => {\n  return { xmlns: 'http://www.w3.org/2000/svg' }\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_choice": "fixed_protocol_constant",
+      "rationale": "The literal's scheme prefix ('http://') trips the default configLiteralPatterns, so the rule does produce a candidate, but the XML namespace is a fixed standards identifier rather than a deploy-specific address.",
+      "tags": [
+        "safe",
+        "namespace"
+      ]
+    },
+    {
+      "id": "ok-relative-path",
+      "filename": "src/services/invoiceRenderer.ts",
+      "source": "export const renderInvoice = (invoice) => {\n  return readFile('./templates/invoice.html')\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "A relative path inside the codebase matches none of the default configLiteralPatterns and no configNamePatterns identifier is assigned it, so the rule produces no candidate.",
+      "tags": [
+        "safe",
+        "relative-path"
+      ]
+    },
+    {
+      "id": "ok-default-timeout-option",
+      "filename": "src/services/http.ts",
+      "source": "export const httpGet = (url, options) => {\n  const timeoutMs = options.timeoutMs ?? 5000\n  return fetch(url, { timeoutMs })\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "timeoutMs is not one of the configNamePatterns identifiers and 5000 is not adjacent to an assignment the collector recognizes, so no candidate is produced for this documented default.",
+      "tags": [
+        "safe",
+        "default-option"
+      ]
+    },
+    {
+      "id": "ambiguous-localhost-default",
+      "filename": "src/services/redis.ts",
+      "source": "export const connectRedis = (options) => {\n  const host = options.host ?? 'localhost'\n  return connect(host)\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_choice": "declared_default_for_injected_option",
+      "rationale": "'localhost' trips the default configLiteralPatterns, so the rule produces a candidate, but it is the documented fallback for an option the caller can already override, not a hardcoded deployment value.",
+      "tags": [
+        "ambiguous",
+        "default-option"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/billing.spec.ts",
+      "source": "export const charge = () => {\n  const apiKey = 'sk-live-51H8xJ2eZvKYlo2C'\n  return apiKey\n}\n",
+      "rule_id": "ideology/no-hardcoded-config",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates at all regardless of its contents.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}

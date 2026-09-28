@@ -2,6 +2,7 @@ import { definePlugin } from '@scruple/core'
 import { injectDependencies } from './rules/injectDependencies.ts'
 import { modelAbsence } from './rules/modelAbsence.ts'
 import { noArgumentMutation } from './rules/noArgumentMutation.ts'
+import { noHardcodedConfig } from './rules/noHardcodedConfig.ts'
 import { noHiddenState } from './rules/noHiddenState.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
@@ -13,6 +14,7 @@ export const ideology = () =>
       'inject-dependencies': injectDependencies,
       'model-absence': modelAbsence,
       'no-argument-mutation': noArgumentMutation,
+      'no-hardcoded-config': noHardcodedConfig,
       'no-hidden-state': noHiddenState,
       'no-swallowed-errors': noSwallowedErrors,
       'prefer-declarative-transformation': preferDeclarativeTransformation,

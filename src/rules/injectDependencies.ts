@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
@@ -20,7 +21,6 @@ export interface InjectDependenciesOptions extends DecisionRuleOptions {
 
 const defaultThreshold = { warning: 0.85, error: 0.95 }
 const defaultMinConfidence = 0.7
-const defaultCompositionRootPattern = '(^|/)index\\.[cm]?[jt]sx?$'
 const defaultFactoryCallPatterns = ['\\.create$', '^create[A-Z]', '^make[A-Z]', '^connect$']
 
 const instructions =

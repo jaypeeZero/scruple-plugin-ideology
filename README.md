@@ -47,6 +47,7 @@ export default defineConfig({
     'ideology/inject-dependencies': 'warn',
     'ideology/model-absence': 'warn',
     'ideology/no-argument-mutation': 'warn',
+    'ideology/no-hardcoded-config': 'warn',
     'ideology/no-hidden-state': 'warn',
     'ideology/no-swallowed-errors': 'warn',
     'ideology/prefer-declarative-transformation': 'warn',
@@ -62,6 +63,7 @@ export default defineConfig({
 | `inject-dependencies` | Inject dependencies. Never instantiate or import a dependency internally. | `compositionRootPattern` (`(^\|/)index\.[cm]?[jt]sx?$`), `testFilePattern` (shared default, see below), `factoryCallPatterns` (`['\.create$', '^create[A-Z]', '^make[A-Z]', '^connect$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `model-absence` | Model absence, don't default it. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-argument-mutation` | Do not mutate inputs; return a new value instead. | `testFilePattern` (shared default, see below), `mutatingMethodPatterns` (`['^(push\|pop\|shift\|unshift\|splice\|sort\|reverse\|fill\|copyWithin\|set\|delete\|clear\|add)$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
+| `no-hardcoded-config` | Store config in environment variables. Never hardcode credentials. | `testFilePattern` (shared default, see below), `compositionRootPattern` (`(^\|/)index\.[cm]?[jt]sx?$`), `configLiteralPatterns` (`['^[a-z][a-z0-9+.-]*://', '\b(localhost\|127\.0\.0\.1)\b', '^(sk\|pk\|ghp\|xox[abp]\|AKIA)[A-Za-z0-9_-]{8,}', '\b[A-Za-z0-9._-]+\.(com\|net\|org\|io\|dev\|internal\|local)\b', '^(postgres\|mysql\|mongodb\|redis\|amqp\|kafka)']`), `configNamePatterns` (`['(apiKey\|api_key\|secret\|token\|password\|passwd\|connectionString\|databaseUrl\|bucket\|queue\|topic\|region\|host\|port)']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-hidden-state` | Pure functions, explicit inputs, no hidden state. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `no-swallowed-errors` | Errors bubble up. Only catch when recovery is possible and the rest can still run. | `testFilePattern` (shared default, see below), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
 | `prefer-declarative-transformation` | Declarative transformations over imperative loops. | `testFilePattern` (shared default, see below), `effectCallPatterns` (`['\.forEach$']`), `threshold` (`{ warning: 0.85, error: 0.95 }`), `minConfidence` (`0.7`) |
