@@ -9,6 +9,7 @@ import { noInfrastructureInCore } from './rules/noInfrastructureInCore.ts'
 import { noRepeatedLiterals } from './rules/noRepeatedLiterals.ts'
 import { noSpeculativeCode } from './rules/noSpeculativeCode.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
+import { noVendorTypesInCore } from './rules/noVendorTypesInCore.ts'
 import { oneJobPerFunction } from './rules/oneJobPerFunction.ts'
 import { preferComposition } from './rules/preferComposition.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
@@ -28,6 +29,7 @@ export const ideology = () =>
       'no-repeated-literals': noRepeatedLiterals,
       'no-speculative-code': noSpeculativeCode,
       'no-swallowed-errors': noSwallowedErrors,
+      'no-vendor-types-in-core': noVendorTypesInCore,
       'one-job-per-function': oneJobPerFunction,
       'prefer-composition': preferComposition,
       'prefer-declarative-transformation': preferDeclarativeTransformation,
