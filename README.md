@@ -21,6 +21,7 @@ A Scruple plugin enforcing the engineering ideology below as semantic lint rules
 - [Testing](docs/ideologies/testing.md) - Test behavior, not code
 - [Codebase](docs/ideologies/codebase.md) - Code, dependencies, and configuration
 - [Error Handling](docs/ideologies/error-handling.md) - Let errors bubble up, handle at the top
+- [Outbound Call Resilience](docs/ideologies/outbound-call-resilience.md) - External failures are the normal path: bound every call, choose degradation deliberately
 
 ## Install
 
