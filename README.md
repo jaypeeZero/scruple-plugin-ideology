@@ -25,7 +25,7 @@ A Scruple plugin enforcing the engineering ideology below as semantic lint rules
 ## Install
 
 ```
-npm install --save-dev github:jaypeeZero/scruple-plugin-ideology#v0.1.0
+npm install --save-dev github:jaypeeZero/scruple-plugin-ideology#v0.3.0
 ```
 
 ```ts
