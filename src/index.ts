@@ -11,6 +11,7 @@ import { noSpeculativeCode } from './rules/noSpeculativeCode.ts'
 import { noSwallowedErrors } from './rules/noSwallowedErrors.ts'
 import { noVendorTypesInCore } from './rules/noVendorTypesInCore.ts'
 import { oneJobPerFunction } from './rules/oneJobPerFunction.ts'
+import { outboundCallResilience } from './rules/outboundCallResilience.ts'
 import { preferComposition } from './rules/preferComposition.ts'
 import { preferDeclarativeTransformation } from './rules/preferDeclarativeTransformation.ts'
 import { preferSimpleConstruct } from './rules/preferSimpleConstruct.ts'
@@ -31,6 +32,7 @@ export const ideology = () =>
       'no-swallowed-errors': noSwallowedErrors,
       'no-vendor-types-in-core': noVendorTypesInCore,
       'one-job-per-function': oneJobPerFunction,
+      'outbound-call-resilience': outboundCallResilience,
       'prefer-composition': preferComposition,
       'prefer-declarative-transformation': preferDeclarativeTransformation,
       'prefer-simple-construct': preferSimpleConstruct,

@@ -1,0 +1,159 @@
+{
+  "default_expected_candidates": 1,
+  "rule_choices": {
+    "ideology/outbound-call-resilience": {
+      "finding": "unguarded_outbound_call",
+      "safe": "resilience_present"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "violation-bare-fetch",
+      "filename": "src/services/rates.ts",
+      "source": "export const loadRates = async (url: string) => {\n  const res = await fetch(url)\n  return res.json()\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "loadRates awaits a bare fetch call with no timeout, abort signal, retry, or fallback anywhere in the body, so a hung or failed request hangs this function indefinitely.",
+      "tags": [
+        "violation",
+        "fetch"
+      ]
+    },
+    {
+      "id": "violation-bare-query",
+      "filename": "src/services/orders.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const listOrders = async (pool: Pool) => {\n  const rows = await pool.query('select * from orders')\n  return rows\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "listOrders awaits a database query with no timeout, retry, or circuit visible in the function, so a slow or dead pool hangs the caller.",
+      "tags": [
+        "violation",
+        "database",
+        "pg"
+      ]
+    },
+    {
+      "id": "violation-bare-sdk",
+      "filename": "src/services/payments.ts",
+      "source": "import Stripe from 'stripe'\n\nexport const charge = async (stripe: Stripe, cents: number) => {\n  return await stripe.charges.create({ amount: cents, currency: 'usd' })\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "charge awaits the Stripe SDK's charge creation directly with no timeout, retry, or fallback, so a Stripe outage fails this function with no design for it.",
+      "tags": [
+        "violation",
+        "third-party-sdk",
+        "stripe"
+      ]
+    },
+    {
+      "id": "violation-bare-publish",
+      "filename": "src/services/events.ts",
+      "source": "export const emit = async (\n  producer: { send: (message: unknown) => Promise<void> },\n  event: unknown\n) => {\n  await producer.send({ topic: 'events', messages: [event] })\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "emit awaits a queue publish with no timeout, retry, or circuit, so a stalled broker hangs this function with no fallback.",
+      "tags": [
+        "violation",
+        "queue"
+      ]
+    },
+    {
+      "id": "ok-abort-signal",
+      "filename": "src/services/ratesAbortSignal.ts",
+      "source": "export const loadRates = async (url: string) => {\n  return await fetch(url, { signal: AbortSignal.timeout(5000) })\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "loadRates awaits fetch with an AbortSignal timeout attached directly to the call, so the outbound call is covered by a visible timeout policy in this body.",
+      "tags": [
+        "safe",
+        "abort-signal",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ok-retry-wrapper",
+      "filename": "src/services/ratesRetryWrapper.ts",
+      "source": "export const loadRates = async (\n  client: { get: (url: string) => Promise<unknown> },\n  url: string\n) => {\n  return retry(async () => await client.get(url), { retries: 3 })\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "loadRates's outbound call to client.get is awaited inside a retry wrapper whose options state the retry policy, so the call is covered rather than left unguarded.",
+      "tags": [
+        "safe",
+        "retry"
+      ]
+    },
+    {
+      "id": "ok-promise-race-timeout",
+      "filename": "src/services/ordersPromiseRace.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const listOrders = async (pool: Pool) => {\n  return await Promise.race([pool.query('select * from orders'), rejectAfter(3000)])\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "rationale": "The query is raced against a rejecting timer, so a hung database rejects this function after three seconds instead of hanging it. The parser marks only the outer Promise.race as awaited; the collector treats a call nested inside an awaited expression as awaited too, so pool.query is the outbound call and the Promise.race line is the resilience evidence.",
+      "tags": [
+        "safe",
+        "promise-race"
+      ],
+      "expected_choice": "resilience_present"
+    },
+    {
+      "id": "ok-fallback-cached",
+      "filename": "src/services/ratesFallbackCached.ts",
+      "source": "export const loadRates = async () => {\n  try {\n    // fallback to cached rates if the network call fails\n    return await fetch('https://rates.example.com')\n  } catch {\n    return cachedRates\n  }\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "loadRates awaits fetch inside a try whose catch and comment both name the fallback path, so the outbound call is covered by a documented fallback rather than left unguarded.",
+      "tags": [
+        "safe",
+        "fallback",
+        "fetch"
+      ]
+    },
+    {
+      "id": "ok-no-outbound-calls",
+      "filename": "src/services/pureMath.ts",
+      "source": "export const double = (n: number): number => {\n  return n * 2\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "double is pure computation with no calls at all, so there is no outbound evidence and no candidate.",
+      "tags": [
+        "safe",
+        "pure-computation"
+      ]
+    },
+    {
+      "id": "ambiguous-signal-param-passed-through",
+      "filename": "src/services/ratesSignalPassthrough.ts",
+      "source": "export const loadRates = async (url: string, signal: AbortSignal) => {\n  return await fetch(url, { signal })\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_owned_by_caller",
+      "rationale": "loadRates receives the abort signal as a parameter and passes it straight through to fetch, so the timeout policy is owned by the caller rather than decided here; a live model run may instead read the signal usage as resilience_present since the word 'signal' is textually present in the body, so this choice is recorded as the first live-run outcome rather than a certainty.",
+      "tags": [
+        "ambiguous",
+        "abort-signal",
+        "caller-owned"
+      ]
+    },
+    {
+      "id": "test-file-skipped",
+      "filename": "src/services/rates.spec.ts",
+      "source": "export const loadRates = async (url: string) => {\n  const res = await fetch(url)\n  return res.json()\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_candidates": 0,
+      "rationale": "The filename matches the default test file pattern, so the rule produces no candidates regardless of the unguarded fetch inside it.",
+      "tags": [
+        "safe",
+        "test-file"
+      ]
+    }
+  ]
+}
