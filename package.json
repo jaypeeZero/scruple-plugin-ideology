@@ -30,19 +30,19 @@
     "prepare": "npm run build"
   },
   "peerDependencies": {
-    "@scruple/core": "^0.2.0"
+    "@scruple/core": ">=0.3.4"
   },
   "devDependencies": {
-    "@scruple/core": "^0.2.0",
-    "@scruple/parser-oxc": "^0.2.0",
-    "@scruple/provider-jev": "^0.2.0",
-    "typescript": "^6.0.3",
-    "ava": "^6.4.1",
-    "tsx": "^4.23.13",
-    "eslint": "^10.4.0",
     "@eslint/js": "^10.0.1",
-    "typescript-eslint": "^8.70.0",
+    "@scruple/core": "latest",
+    "@scruple/parser-oxc": "latest",
+    "@scruple/provider-jev": "latest",
+    "@types/node": "^24.13.4",
+    "ava": "^6.4.1",
+    "eslint": "^10.4.0",
     "globals": "^17.6.0",
-    "@types/node": "^24.13.4"
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0"
   }
 }
