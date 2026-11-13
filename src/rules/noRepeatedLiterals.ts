@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { moduleScopeSource } from '../moduleScope.ts'
 import { matchesAny } from '../patterns.ts'
@@ -167,6 +168,7 @@ export const noRepeatedLiterals: RuleFactory<NoRepeatedLiteralsOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               repeated: groups.map(({ literal, functions: functionNames, count }) => ({
                 literal,
                 functions: functionNames,

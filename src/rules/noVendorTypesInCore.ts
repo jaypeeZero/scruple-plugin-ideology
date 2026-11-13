@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultInfrastructureImportPatterns, importBindings } from '../importBindings.ts'
@@ -30,9 +31,9 @@ const instructions =
 
 const criteria = {
   vendor_shape_leaks_to_callers:
-    'A parameter or return type is a type from the infrastructure package, or the function returns the vendor client\'s response unmapped, so callers depend on that vendor.',
+    'A parameter or return type is a type from the infrastructure package, or the function returns the vendor client\'s response unmapped, so core callers depend on that vendor.',
   adapter_owns_the_vendor:
-    'The function is the one place that talks to this vendor and it accepts and returns domain values or interfaces the codebase owns; vendor types appear only inside the body or in private helpers.',
+    'The function is adapter code for this vendor: it talks to the vendor and accepts and returns domain values or interfaces the codebase owns, with vendor types only inside the body or in private helpers; or it lives in that vendor\'s own edge layer (the declaration\'s filename sits under http/, routes/, controllers/, handlers/, or middleware/ for a web framework) and returns domain values, so only edge code calls it.',
   vendor_type_is_the_domain:
     'The package is not really infrastructure for this codebase (a utility library, a schema library) or its type is deliberately the domain model by decision recorded in the file.',
   insufficient_context:
@@ -161,6 +162,7 @@ export const noVendorTypesInCore: RuleFactory<NoVendorTypesInCoreOptions> = (
               imports: document.imports,
               infrastructureImports: infraImports,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               signatureLeaks,
               returnLeaks
             },

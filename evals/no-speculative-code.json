@@ -127,7 +127,7 @@
     {
       "id": "ambiguous-exported-options",
       "filename": "src/services/createClient.ts",
-      "source": "export const createClient = (options: { retries?: number; timeoutMs?: number; baseUrl?: string; keepAlive?: boolean }) => {\n  return options.baseUrl\n}\n",
+      "source": "/** Public API: the options shape is a published contract that client packages construct. */\nexport const createClient = (options: { retries?: number; timeoutMs?: number; baseUrl?: string; keepAlive?: boolean }) => {\n  return options.baseUrl\n}\n",
       "rule_id": "ideology/no-speculative-code",
       "expected_finding": false,
       "expected_choice": "public_api_surface_by_contract",

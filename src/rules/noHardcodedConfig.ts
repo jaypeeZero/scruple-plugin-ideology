@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { stringLiteralContents } from '../stringLiterals.ts'
@@ -133,6 +134,7 @@ export const noHardcodedConfig: RuleFactory<NoHardcodedConfigOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               literals,
               envReads
             },

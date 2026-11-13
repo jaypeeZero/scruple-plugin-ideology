@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
@@ -28,9 +29,9 @@ const instructions =
 
 const criteria = {
   constructs_collaborator_internally:
-    'A client, repository, service, connection, or other object with behaviour is constructed here and used by this function or stored for later use.',
+    'A client, repository, service, connection, logger, or other object that does I/O, holds external state, or coordinates other work (an AbortController, a scheduler, an event emitter) is constructed here and used by this function or stored for later use.',
   constructs_plain_value:
-    'Only data is constructed: built-in language or platform types, errors, dates, collections, DTOs, value objects, framework option bags.',
+    'Only data or pure computation is constructed: built-in language or platform types, errors, dates, collections, DTOs, value objects, framework option bags, and utilities that only compute a result from their input (URL, RegExp, TextEncoder, a crypto hash).',
   returns_constructed_object:
     'The construction is the function\'s product and is returned or passed out; the function is itself a factory.',
   insufficient_context:
@@ -88,6 +89,7 @@ export const injectDependencies: RuleFactory<InjectDependenciesOptions> = (
               language: fn.language,
               imports: document.imports,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               constructions: [
                 ...scopedConstructors.map((ctor) => ctor.source),
                 ...factoryCalls.map((call) => call.source)

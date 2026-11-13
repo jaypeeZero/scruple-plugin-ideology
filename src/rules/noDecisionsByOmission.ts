@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
@@ -164,6 +165,7 @@ export const noDecisionsByOmission: RuleFactory<NoDecisionsByOmissionOptions> = 
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               escapes: escapes.map((escape) => ({ kind: escape.kind, source: escape.source }))
             },
             question

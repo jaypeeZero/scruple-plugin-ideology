@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { moduleScopeSource } from '../moduleScope.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
@@ -95,6 +96,7 @@ export const noHiddenState: RuleFactory<NoHiddenStateOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               moduleBindings: referenced.map((binding) => binding.line)
             },
             question

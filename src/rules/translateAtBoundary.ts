@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { matchesAny } from '../patterns.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
@@ -111,6 +112,7 @@ export const translateAtBoundary: RuleFactory<TranslateAtBoundaryOptions> = (
               language: fn.language,
               imports: document.imports,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               parseCalls,
               externalShapes
             },

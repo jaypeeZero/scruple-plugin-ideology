@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { loopRegionsWithin } from '../loopRegions.ts'
 import { stripStringLiterals } from '../stringLiterals.ts'
@@ -219,6 +220,7 @@ export const preferSimpleConstruct: RuleFactory<PreferSimpleConstructOptions> = 
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               constructs: constructs.map((construct) => ({ kind: construct.kind, source: construct.source }))
             },
             question

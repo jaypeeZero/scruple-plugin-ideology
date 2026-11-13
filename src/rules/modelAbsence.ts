@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { parameterListText } from '../parameters.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
@@ -103,6 +104,7 @@ export const modelAbsence: RuleFactory<ModelAbsenceOptions> = (options = {}): Se
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               defaults: defaults.map((entry) => ({ kind: entry.kind, source: entry.source }))
             },
             question

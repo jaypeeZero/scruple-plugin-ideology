@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { boundNames, parameterListText, splitTopLevelParams } from '../parameters.ts'
 import { matchesAny } from '../patterns.ts'
@@ -29,13 +30,13 @@ const instructions =
 
 const criteria = {
   speculative_flexibility:
-    'At least one listed item could be removed with no change to any behaviour visible in this file: unread option keys, a flag that should be two functions, a constant condition, a hook nobody calls.',
+    'At least one listed item is flexibility this file does not need: option keys never read; a boolean flag whose branches share no code, so it is two functions behind one signature even though the flag is read; a constant condition; or a hook whose default is a no-op and that nothing in this file passes a real value for, even though the function calls it.',
   flexibility_is_exercised:
-    'Each listed item is genuinely used: the options are read, the pass-through parameter is the function\'s whole job (an adapter), the flag is set from real input, the generic constrains two positions.',
+    'Each listed item earns its place: the options are read, the pass-through parameter is the function\'s whole job (an adapter), the flag adjusts a body that both branches share, a hook is passed a real value somewhere in this file, the generic constrains two positions.',
   public_api_surface_by_contract:
-    'The function is an exported library entry point whose signature is a published contract; unused-here does not mean unused.',
+    'The state\'s declaration.docComment says this signature is public API or a published contract, so unused-here does not mean unused. Being exported without such a comment is not enough.',
   insufficient_context:
-    'Whether callers outside this file use the flexibility cannot be determined.'
+    'The function is truncated, or the flexibility depends on code that is not shown. Being exported does not make this undecidable: judge the file as shown.'
 }
 
 const finding = 'speculative_flexibility'
@@ -291,6 +292,7 @@ export const noSpeculativeCode: RuleFactory<NoSpeculativeCodeOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               speculation: evidence.map(({ kind, source }) => ({ kind, source }))
             },
             question

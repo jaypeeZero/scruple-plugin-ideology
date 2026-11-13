@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { loopRegionsWithin } from '../loopRegions.ts'
 import { stripStringLiterals } from '../stringLiterals.ts'
@@ -306,6 +307,7 @@ export const preferComposition: RuleFactory<PreferCompositionOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               chains: chains.map((chain) => ({ kind: chain.kind, steps: chain.steps, source: chain.source }))
             },
             question

@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { boundNames, parameterListText, splitTopLevelParams } from '../parameters.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
@@ -28,11 +29,11 @@ const instructions =
 
 const criteria = {
   mutates_parameter:
-    'A property, element, or entry of a parameter, or of something reached through a parameter, is assigned, deleted, or changed by a mutating method, and that change is visible to the caller after the function returns.',
+    'A property, element, or entry of a parameter, or of something reached through a parameter, is assigned, deleted, or changed by a mutating method, and that change is visible to the caller after the function returns. Data the caller owns (an array, a Map, a domain object such as an order or user) counts even when the function\'s name says it adds to or updates that data.',
   mutates_local_copy:
     'The mutation targets a value this function created (spread, slice, `new`, structuredClone, Array.from, a fresh literal); the parameter itself is unchanged.',
   parameter_is_a_builder_by_contract:
-    'The parameter is an accumulator, sink, or builder that the caller passed in specifically to be filled (a reduce accumulator, a stream, a response object, a Set being populated), and filling it is the function\'s documented job.',
+    'The parameter is an output channel by its kind, not by the function\'s name: an HTTP response or its headers, a stream or writer, a reduce accumulator, or a builder object whose only purpose is to be filled; and writing to it is the function\'s job. This applies even though the caller sees the change; that change is the point.',
   insufficient_context:
     'Whether the mutated binding aliases the parameter cannot be determined from the function shown.'
 }
@@ -168,6 +169,7 @@ export const noArgumentMutation: RuleFactory<NoArgumentMutationOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               parameters,
               mutations
             },

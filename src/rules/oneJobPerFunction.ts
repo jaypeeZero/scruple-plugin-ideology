@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { parameterListText } from '../parameters.ts'
 import { matchesAny } from '../patterns.ts'
@@ -52,9 +53,9 @@ const instructions =
 
 const criteria = {
   mixes_concerns:
-    'Two or more of these live in the same body: talking to a network, database, file, or queue; formatting output for people or logs; validating input shape; deciding business rules. Removing one would leave a function with a different, narrower purpose.',
+    'Two or more of these live in the same body: talking to a network, database, file, or queue; formatting output for people or logs; validating input shape; deciding business rules. Two or more separate business calculations computed inline (for example discount, tax, and shipping), each of which could be its own named function, also count. Removing one would leave a function with a different, narrower purpose.',
   single_concern:
-    'The body does one job. Orchestrating injected collaborators in sequence, and branching on their results, counts as the single job of a service or use-case function.',
+    'The body does one job: one calculation, or orchestrating injected collaborators in sequence and branching on their results, which counts as the single job of a service or use-case function.',
   thin_entry_point:
     'The function is an entry point (route handler, CLI command, event handler) whose job is to wire request to core to response; it holds no business rules of its own.',
   insufficient_context:
@@ -203,6 +204,7 @@ export const oneJobPerFunction: RuleFactory<OneJobPerFunctionOptions> = (
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               concerns: concerns.map((concern) => ({ bucket: concern.bucket, callees: concern.callees })),
               branchCount: branches,
               lineCount

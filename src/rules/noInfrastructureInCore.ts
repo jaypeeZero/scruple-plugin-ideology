@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultInfrastructureImportPatterns, importBindings } from '../importBindings.ts'
@@ -129,6 +130,7 @@ export const noInfrastructureInCore: RuleFactory<NoInfrastructureInCoreOptions> 
               imports: document.imports,
               infrastructureImports: infraImports,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               infrastructureBindings,
               ruleSignals
             },

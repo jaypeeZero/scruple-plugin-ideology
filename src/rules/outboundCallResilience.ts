@@ -10,6 +10,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultInfrastructureImportPatterns, importBindings } from '../importBindings.ts'
 import { matchesAny } from '../patterns.ts'
@@ -149,6 +150,7 @@ export const outboundCallResilience: RuleFactory<OutboundCallResilienceOptions> 
               language: fn.language,
               imports: document.imports,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               outboundCalls,
               resilience
             },

@@ -9,6 +9,7 @@ import type {
   SemanticRule
 } from '@scruple/core'
 import { boundedText } from '../bounded.ts'
+import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { loopRegionsWithin } from '../loopRegions.ts'
 import { matchesAny } from '../patterns.ts'
@@ -30,9 +31,9 @@ const criteria = {
   loop_is_disguised_transformation:
     'The loop\'s body accumulates into a collection, object, or scalar declared before the loop (push, index assignment, +=, [key] = value) with no early exit, and the same result is one map, filter, reduce, find, some, every, flatMap, or Object.fromEntries call.',
   loop_performs_effects:
-    'The body\'s purpose is to perform an effect per element (register, write, send, log, await a call) rather than to produce a value.',
+    'The body\'s purpose is to perform an effect per element (register, write, send, log, await a call) rather than to produce a value, over a collection whose length is fixed while the loop runs.',
   loop_needs_imperative_control:
-    'The body uses break, continue, early return, index arithmetic across elements, or awaits in a fixed order where the sequencing matters, so no single collection method expresses it.',
+    'The body uses break, continue, early return, index arithmetic across elements, or awaits in a fixed order where the sequencing matters, or the collection changes length while the loop runs (a queue drained while new work is pushed onto it), so no single collection method expresses it. This takes precedence over loop_performs_effects.',
   insufficient_context:
     'The body\'s purpose cannot be determined from the function shown.'
 }
@@ -93,6 +94,7 @@ export const preferDeclarativeTransformation: RuleFactory<PreferDeclarativeTrans
             state: {
               language: fn.language,
               function: { text, truncated },
+              declaration: declarationOf(document, fn),
               loops: loops.map((loop) => ({
                 kind: loop.kind,
                 source: boundedText(loop.source, 1500).text
