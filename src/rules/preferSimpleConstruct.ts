@@ -8,6 +8,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -18,9 +19,6 @@ import { defaultTestFilePattern } from '../testFiles.ts'
 export interface PreferSimpleConstructOptions extends DecisionRuleOptions {
   testFilePattern?: string
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Does this function use a clever construct where a plainer one would meet the same requirement and be easier to read?'

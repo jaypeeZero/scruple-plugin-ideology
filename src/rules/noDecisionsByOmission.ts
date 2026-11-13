@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -17,9 +18,6 @@ import { defaultTestFilePattern } from '../testFiles.ts'
 export interface NoDecisionsByOmissionOptions extends DecisionRuleOptions {
   testFilePattern?: string
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Does this function leave a decision unmade: by silencing a type checker or linter without a reason, or by shipping a placeholder where behaviour was needed, so that the consequence is unknown?'

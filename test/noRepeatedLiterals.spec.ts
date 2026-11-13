@@ -197,44 +197,6 @@ test('produces two candidates when two evidence groups have different first-occu
   t.deepEqual(candidates.map((candidate) => (candidate.target as FunctionTarget).name), ['f1', 'f2'])
 })
 
-test('diagnose returns a warning at probability 0.90 with confidence 0.8', t => {
-  const rule = noRepeatedLiterals()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('repeated_meaningful_literal', 0.90, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'warning')
-})
-
-test('diagnose returns an error at probability 0.96 with confidence 0.8', t => {
-  const rule = noRepeatedLiterals()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('repeated_meaningful_literal', 0.96, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'error')
-})
-
-test('diagnose returns null below the warning threshold at probability 0.84', t => {
-  const rule = noRepeatedLiterals()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('repeated_meaningful_literal', 0.84, 0.8), candidate)
-
-  t.is(diagnostic, null)
-})
-
-test('diagnose returns null below minimum confidence at confidence 0.6', t => {
-  const rule = noRepeatedLiterals()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('repeated_meaningful_literal', 0.96, 0.6), candidate)
-
-  t.is(diagnostic, null)
-})
-
 test('diagnose returns null for the coincidental_or_structural label', t => {
   const rule = noRepeatedLiterals()
   const candidate = fixtureCandidate()

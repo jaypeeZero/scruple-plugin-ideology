@@ -8,6 +8,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -22,8 +23,6 @@ export interface PreferCompositionOptions extends DecisionRuleOptions {
   minChain?: number
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const defaultMinSteps = 3
 const defaultMinNesting = 4
 const defaultMinChain = 5

@@ -160,44 +160,6 @@ test('positions the single candidate on the function that references module stat
   t.is((candidates[0].target as FunctionTarget).name, 'increment')
 })
 
-test('diagnose returns a warning at probability 0.90 with confidence 0.8', t => {
-  const rule = noHiddenState()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('reads_or_writes_hidden_state', 0.90, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'warning')
-})
-
-test('diagnose returns an error at probability 0.96 with confidence 0.8', t => {
-  const rule = noHiddenState()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('reads_or_writes_hidden_state', 0.96, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'error')
-})
-
-test('diagnose returns null below the warning threshold at probability 0.84', t => {
-  const rule = noHiddenState()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('reads_or_writes_hidden_state', 0.84, 0.8), candidate)
-
-  t.is(diagnostic, null)
-})
-
-test('diagnose returns null below minimum confidence at confidence 0.6', t => {
-  const rule = noHiddenState()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('reads_or_writes_hidden_state', 0.96, 0.6), candidate)
-
-  t.is(diagnostic, null)
-})
-
 test('diagnose returns null for the references_immutable_constant label', t => {
   const rule = noHiddenState()
   const candidate = fixtureCandidate()

@@ -8,15 +8,13 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
 export interface NoSwallowedErrorsOptions extends DecisionRuleOptions {
   testFilePattern?: string
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Does this catch block stop an error from reaching the layer that should handle it, without enabling the surrounding code to continue correctly?'

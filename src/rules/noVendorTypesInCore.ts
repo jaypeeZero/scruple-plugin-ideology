@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
@@ -22,9 +23,6 @@ export interface NoVendorTypesInCoreOptions extends DecisionRuleOptions {
   compositionRootPattern?: string
   infrastructureImportPatterns?: string[]
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Does this function expose a vendor or infrastructure package\'s own types or response shapes to its callers, so that swapping the service would change the callers too?'

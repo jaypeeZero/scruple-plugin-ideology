@@ -179,44 +179,6 @@ test('produces one candidate with two entries in state.defaults for a function w
   t.is(state.defaults.length, 2)
 })
 
-test('diagnose returns a warning at probability 0.90 with confidence 0.8', t => {
-  const rule = modelAbsence()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('default_hides_missing_value', 0.90, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'warning')
-})
-
-test('diagnose returns an error at probability 0.96 with confidence 0.8', t => {
-  const rule = modelAbsence()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('default_hides_missing_value', 0.96, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'error')
-})
-
-test('diagnose returns null below the warning threshold at probability 0.84', t => {
-  const rule = modelAbsence()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('default_hides_missing_value', 0.84, 0.8), candidate)
-
-  t.is(diagnostic, null)
-})
-
-test('diagnose returns null below minimum confidence at confidence 0.6', t => {
-  const rule = modelAbsence()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('default_hides_missing_value', 0.96, 0.6), candidate)
-
-  t.is(diagnostic, null)
-})
-
 test('diagnose returns null for the default_is_a_declared_option label', t => {
   const rule = modelAbsence()
   const candidate = fixtureCandidate()

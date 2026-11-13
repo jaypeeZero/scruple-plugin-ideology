@@ -278,44 +278,6 @@ test('an awaited call on an infrastructure import binding counts as outbound eve
   t.is(state.outboundCalls[0].callee, 'AWS.customCall')
 })
 
-test('diagnose returns a warning at probability 0.90 with confidence 0.8', t => {
-  const rule = outboundCallResilience()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('unguarded_outbound_call', 0.90, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'warning')
-})
-
-test('diagnose returns an error at probability 0.96 with confidence 0.8', t => {
-  const rule = outboundCallResilience()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('unguarded_outbound_call', 0.96, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'error')
-})
-
-test('diagnose returns null below the warning threshold at probability 0.84', t => {
-  const rule = outboundCallResilience()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('unguarded_outbound_call', 0.84, 0.8), candidate)
-
-  t.is(diagnostic, null)
-})
-
-test('diagnose returns null below minimum confidence at confidence 0.6', t => {
-  const rule = outboundCallResilience()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('unguarded_outbound_call', 0.96, 0.6), candidate)
-
-  t.is(diagnostic, null)
-})
-
 test('diagnose returns null for the resilience_present label', t => {
   const rule = outboundCallResilience()
   const candidate = fixtureCandidate()

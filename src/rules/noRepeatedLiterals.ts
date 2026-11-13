@@ -8,6 +8,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -23,8 +24,6 @@ export interface NoRepeatedLiteralsOptions extends DecisionRuleOptions {
   ignoredLiteralPatterns?: string[]
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const defaultMinFunctions = 2
 const defaultMinLength = 2
 const defaultIgnoredLiteralPatterns = [

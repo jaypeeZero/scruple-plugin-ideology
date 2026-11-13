@@ -8,6 +8,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -17,9 +18,6 @@ import { defaultTestFilePattern } from '../testFiles.ts'
 export interface NoHiddenStateOptions extends DecisionRuleOptions {
   testFilePattern?: string
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Does this function read or write module-level state that is not passed in as a parameter?'

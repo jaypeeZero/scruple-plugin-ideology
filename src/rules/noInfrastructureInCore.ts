@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { defaultCompositionRootPattern } from '../compositionRoot.ts'
@@ -22,9 +23,6 @@ export interface NoInfrastructureInCoreOptions extends DecisionRuleOptions {
   compositionRootPattern?: string
   infrastructureImportPatterns?: string[]
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'Is this function core business logic that reaches directly into an infrastructure package, rather than an edge adapter whose only job is to translate between that infrastructure and the domain?'

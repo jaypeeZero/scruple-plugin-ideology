@@ -8,6 +8,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -17,9 +18,6 @@ import { defaultTestFilePattern } from '../testFiles.ts'
 export interface ModelAbsenceOptions extends DecisionRuleOptions {
   testFilePattern?: string
 }
-
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 
 const instructions =
   'When one of these values is missing, does this function replace it with a fabricated value so that callers can no longer tell it was absent?'

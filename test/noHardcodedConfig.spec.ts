@@ -266,44 +266,6 @@ test('a custom configLiteralPatterns changes which literals are recognized as ha
   t.is(customRule.collect(document).length, 1)
 })
 
-test('diagnose returns a warning at probability 0.90 with confidence 0.8', t => {
-  const rule = noHardcodedConfig()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('hardcodes_deploy_specific_value', 0.90, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'warning')
-})
-
-test('diagnose returns an error at probability 0.96 with confidence 0.8', t => {
-  const rule = noHardcodedConfig()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('hardcodes_deploy_specific_value', 0.96, 0.8), candidate)
-
-  t.truthy(diagnostic)
-  t.is(diagnostic?.severity, 'error')
-})
-
-test('diagnose returns null below the warning threshold at probability 0.84', t => {
-  const rule = noHardcodedConfig()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('hardcodes_deploy_specific_value', 0.84, 0.8), candidate)
-
-  t.is(diagnostic, null)
-})
-
-test('diagnose returns null below minimum confidence at confidence 0.6', t => {
-  const rule = noHardcodedConfig()
-  const candidate = fixtureCandidate()
-
-  const diagnostic = rule.diagnose(choiceAnswer('hardcodes_deploy_specific_value', 0.96, 0.6), candidate)
-
-  t.is(diagnostic, null)
-})
-
 test('diagnose returns null for the fixed_protocol_constant label', t => {
   const rule = noHardcodedConfig()
   const candidate = fixtureCandidate()

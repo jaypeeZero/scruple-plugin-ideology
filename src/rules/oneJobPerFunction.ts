@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -25,8 +26,6 @@ export interface OneJobPerFunctionOptions extends DecisionRuleOptions {
   validationCallPatterns?: string[]
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const defaultMinLines = 40
 const defaultIoCallPatterns = [
   '^(fetch|axios|got)\\b',

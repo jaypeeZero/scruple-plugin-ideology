@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -20,8 +21,6 @@ export interface NoArgumentMutationOptions extends DecisionRuleOptions {
   mutatingMethodPatterns?: string[]
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const defaultMutatingMethodPatterns = ['^(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin|set|delete|clear|add)$']
 
 const instructions =

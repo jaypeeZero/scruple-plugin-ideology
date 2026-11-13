@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -21,8 +22,6 @@ export interface NoSpeculativeCodeOptions extends DecisionRuleOptions {
   optionsParameterPatterns?: string[]
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const defaultOptionsParameterPatterns = ['^(options|opts|config|settings|params)$']
 
 const instructions =
@@ -30,9 +29,9 @@ const instructions =
 
 const criteria = {
   speculative_flexibility:
-    'At least one listed item is flexibility this file does not need: option keys never read; a boolean flag whose branches share no code, so it is two functions behind one signature even though the flag is read; a constant condition; or a hook whose default is a no-op and that nothing in this file passes a real value for, even though the function calls it.',
+    'At least one listed item is flexibility this file does not need: option keys never read; a boolean flag where every line of the body sits inside one branch or the other, so it is two functions behind one signature even though the flag is read; a constant condition; or a hook whose default is a no-op and that nothing in this file passes a real value for, even though the function calls it.',
   flexibility_is_exercised:
-    'Each listed item earns its place: the options are read, the pass-through parameter is the function\'s whole job (an adapter), the flag adjusts a body that both branches share, a hook is passed a real value somewhere in this file, the generic constrains two positions.',
+    'Each listed item earns its place: the options are read, the pass-through parameter is the function\'s whole job (an adapter), the flag adjusts a body with at least one line that runs on both paths (such as a value computed before the branch and used in each), a hook is passed a real value somewhere in this file, the generic constrains two positions.',
   public_api_surface_by_contract:
     'The state\'s declaration.docComment says this signature is public API or a published contract, so unused-here does not mean unused. Being exported without such a comment is not enough.',
   insufficient_context:

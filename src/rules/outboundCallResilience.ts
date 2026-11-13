@@ -9,6 +9,7 @@ import type {
   RuleFactory,
   SemanticRule
 } from '@scruple/core'
+import { defaultMinConfidence, defaultThreshold } from '../decisionDefaults.ts'
 import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
@@ -22,8 +23,6 @@ export interface OutboundCallResilienceOptions extends DecisionRuleOptions {
   resiliencePatterns?: string[]
 }
 
-const defaultThreshold = { warning: 0.85, error: 0.95 }
-const defaultMinConfidence = 0.7
 const infrastructureImportPatterns = defaultInfrastructureImportPatterns.map((pattern) => new RegExp(pattern))
 
 const defaultOutboundCallPatterns = [
@@ -43,11 +42,11 @@ const instructions =
 
 const criteria = {
   unguarded_outbound_call:
-    'At least one awaited call to a network, database, queue, or third-party service has no timeout, abort signal, retry, fallback, or circuit visible here, and nothing in the function name or wrapper indicates the policy lives elsewhere.',
+    'At least one awaited call to a network, database, queue, or third-party service has no timeout, abort signal, retry, fallback, or circuit visible here, and nothing in the function name, a wrapper, or the declaration.docComment indicates the policy lives elsewhere. A client received as a parameter still counts: injecting the client does not give it a policy.',
   resilience_present:
     'Every outbound call is covered by a timeout, signal, retry, fallback, or circuit in this body, or is made through a wrapper whose name states the policy.',
   resilience_owned_by_caller:
-    'The function receives the client or a signal from its caller and is documented or shaped as a thin adapter whose caller owns the policy.',
+    'The caller passes the policy in: the function receives an abort signal, timeout, or deadline and hands it to its outbound calls, or the declaration.docComment states that the caller owns the timeout and retry policy. Receiving only the client is not enough.',
   insufficient_context:
     'Whether the callee is an external service, or whether a policy wraps it elsewhere, cannot be determined from the function shown.'
 }
