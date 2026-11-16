@@ -52,11 +52,11 @@ const instructions =
 
 const criteria = {
   mixes_concerns:
-    'Two or more of these live in the same body: talking to a network, database, file, or queue; formatting output for people or logs; validating input shape; deciding business rules. Two or more separate business calculations computed inline (for example discount, tax, and shipping), each of which could be its own named function, also count. Removing one would leave a function with a different, narrower purpose.',
+    'Two or more of these live in the same body: talking to a network, database, file, or queue; formatting output for people or logs; validating input shape; deciding business rules. Two or more separate business calculations computed inline (for example discount, tax, and shipping), each of which could be its own named function, also count. Removing one would leave a function with a different, narrower purpose. Rejecting the caller\'s input before using it (an invalid email, a missing field) is validating input shape; branching on what a collaborator returned is not. A call to an injected logger that records what the function did is not a concern of its own.',
   single_concern:
-    'The body does one job: one calculation, or orchestrating injected collaborators in sequence and branching on their results, which counts as the single job of a service or use-case function.',
+    'The body does one job: one calculation, or orchestrating injected collaborators in sequence and branching on their results, which counts as the single job of a service or use-case function, including recording what happened through an injected logger.',
   thin_entry_point:
-    'The function is an entry point (route handler, CLI command, event handler) whose job is to wire request to core to response; it holds no business rules of its own.',
+    'The function is an entry point (route handler, CLI command, event handler) whose job is to wire request to core to response; it holds no business rules of its own, and rejecting a malformed request before calling the core is part of that wiring.',
   insufficient_context:
     'The callees\' roles cannot be determined from the function shown.'
 }

@@ -143,6 +143,38 @@
         "safe",
         "test-file"
       ]
+    },
+    {
+      "id": "ok-orm-table-definition",
+      "filename": "src/orders/orderModel.ts",
+      "source": "import { DataTypes, Model } from 'sequelize'\nimport type { ModelStatic, Sequelize } from 'sequelize'\n\nclass OrderRow extends Model {\n  declare id: string\n}\n\nexport const defineOrderTable = function (sequelize: Sequelize): ModelStatic<OrderRow> {\n  return OrderRow.init({ id: { type: DataTypes.UUID, primaryKey: true } }, { sequelize, tableName: 'orders' })\n}\n",
+      "rule_id": "ideology/no-vendor-types-in-core",
+      "expected_finding": false,
+      "expected_choice": "adapter_owns_the_vendor",
+      "rationale": "defineOrderTable is the ORM's own schema definition: it takes the Sequelize connection and returns the Sequelize model, and only composition code calls it to build repositories, so the vendor types never reach core callers.",
+      "tags": [
+        "safe",
+        "orm-definition",
+        "sequelize"
+      ]
+    },
+    {
+      "id": "ok-private-transaction-helper",
+      "filename": "src/orders/orderRepository.ts",
+      "source": "import { toOrder } from './orderModel.js'\nimport type { ModelStatic, Transaction } from 'sequelize'\nimport type { Order, OrderRow } from './orderModel.js'\n\nexport class PostgresOrderRepository {\n  readonly #table: ModelStatic<OrderRow>\n\n  constructor (table: ModelStatic<OrderRow>) {\n    this.#table = table\n  }\n\n  async #read (id: string, transaction: Transaction): Promise<Order | null> {\n    const row = await this.#table.findByPk(id, { transaction })\n    return row === null ? null : toOrder(row)\n  }\n}\n",
+      "rule_id": "ideology/no-vendor-types-in-core",
+      "expected_finding": false,
+      "expected_candidates": 2,
+      "expected_choices": [
+        "adapter_owns_the_vendor",
+        "adapter_owns_the_vendor"
+      ],
+      "rationale": "The constructor receives the Sequelize model from composition and #read is a private method that takes a Sequelize transaction and returns a domain Order; both are internals of the repository adapter, which no core caller sees.",
+      "tags": [
+        "safe",
+        "private-helper",
+        "sequelize"
+      ]
     }
   ]
 }

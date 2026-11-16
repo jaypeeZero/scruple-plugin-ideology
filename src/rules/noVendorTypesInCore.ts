@@ -31,7 +31,7 @@ const criteria = {
   vendor_shape_leaks_to_callers:
     'A parameter or return type is a type from the infrastructure package, or the function returns the vendor client\'s response unmapped, so core callers depend on that vendor.',
   adapter_owns_the_vendor:
-    'The function is adapter code for this vendor: it talks to the vendor and accepts and returns domain values or interfaces the codebase owns, with vendor types only inside the body or in private helpers; or it lives in that vendor\'s own edge layer (the declaration\'s filename sits under http/, routes/, controllers/, handlers/, or middleware/ for a web framework) and returns domain values, so only edge code calls it.',
+    'The function is adapter code for this vendor: it talks to the vendor and accepts and returns domain values or interfaces the codebase owns, with vendor types only inside the body or in private helpers; or it lives in that vendor\'s own edge layer (the declaration\'s filename sits under http/, routes/, controllers/, handlers/, or middleware/ for a web framework) and returns domain values, so only edge code calls it; or it defines or wires the vendor\'s own objects (an ORM table, model, or association definition, a constructor that receives the vendor object, composition that builds adapters from it), which only composition code calls. A private helper (a `#private` method, or a function the file does not export) is adapter code whatever its parameter and return types, because only the adapter itself calls it.',
   vendor_type_is_the_domain:
     'The package is not really infrastructure for this codebase (a utility library, a schema library) or its type is deliberately the domain model by decision recorded in the file.',
   insufficient_context:

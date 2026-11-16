@@ -32,7 +32,7 @@ const criteria = {
   constructs_plain_value:
     'Only data or pure computation is constructed: built-in language or platform types, errors, dates, collections, DTOs, value objects, framework option bags, and utilities that only compute a result from their input (URL, RegExp, TextEncoder, a crypto hash).',
   returns_constructed_object:
-    'The construction is the function\'s product and is returned or passed out; the function is itself a factory.',
+    'The construction is the function\'s product and is returned or passed out, alone or inside what the function returns (a logger built from its transports, a server, an object of repositories); the function is itself a factory or composition code, even when it configures what it builds before returning it.',
   insufficient_context:
     'The imports and function body do not establish what the constructed thing is.'
 }

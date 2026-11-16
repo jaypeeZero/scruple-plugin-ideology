@@ -204,6 +204,34 @@
         "safe",
         "composition-root"
       ]
+    },
+    {
+      "id": "ok-builder-returns-composite",
+      "filename": "src/conf/logger.ts",
+      "source": "import winston from 'winston'\n\nexport const buildLogger = (level: string) => {\n  const transports = [new winston.transports.Console({ level })]\n  return winston.createLogger({ transports, level })\n}\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "returns_constructed_object",
+      "rationale": "buildLogger constructs the console transport only to build the logger it returns; the logger is the function's product and the function never uses it, so it is a factory, not a function hiding a collaborator.",
+      "tags": [
+        "safe",
+        "factory",
+        "builder"
+      ]
+    },
+    {
+      "id": "ok-composition-object",
+      "filename": "src/composition/repositories.ts",
+      "source": "import { PostgresOrderRepository } from '../orders/orderRepository.js'\nimport { PostgresUserRepository } from '../users/userRepository.js'\nimport type { Tables } from './database.js'\n\nexport const buildRepositories = (tables: Tables) => ({\n  orders: new PostgresOrderRepository(tables.orders),\n  users: new PostgresUserRepository(tables.users),\n})\n",
+      "rule_id": "ideology/inject-dependencies",
+      "expected_finding": false,
+      "expected_choice": "returns_constructed_object",
+      "rationale": "buildRepositories is composition code: it constructs each repository from tables it receives and returns them all in one object, never using them itself.",
+      "tags": [
+        "safe",
+        "factory",
+        "composition"
+      ]
     }
   ]
 }

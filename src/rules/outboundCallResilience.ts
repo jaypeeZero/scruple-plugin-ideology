@@ -42,9 +42,9 @@ const instructions =
 
 const criteria = {
   unguarded_outbound_call:
-    'At least one awaited call to a network, database, queue, or third-party service has no timeout, abort signal, retry, fallback, or circuit visible here, and nothing in the function name, a wrapper, or the declaration.docComment indicates the policy lives elsewhere. A client received as a parameter still counts: injecting the client does not give it a policy.',
+    'At least one awaited call to a network, database, queue, or third-party service has no timeout, abort signal, retry, fallback, or circuit visible here, and nothing in the function name, a wrapper, or the declaration.docComment indicates the policy lives elsewhere. A vendor client received as a parameter still counts: injecting the client does not give it a policy.',
   resilience_present:
-    'Every outbound call is covered by a timeout, signal, retry, fallback, or circuit in this body, or is made through a wrapper whose name states the policy.',
+    'Every outbound call is covered by a timeout, signal, retry, fallback, or circuit in this body, or is made through a wrapper whose name states the policy, or goes to a repository, service, or client interface this codebase defines (its type is imported from one of the codebase\'s own modules, a relative import), so the policy belongs to that interface\'s implementation. A parameter typed inline or with a vendor package\'s type is not such an interface.',
   resilience_owned_by_caller:
     'The caller passes the policy in: the function receives an abort signal, timeout, or deadline and hands it to its outbound calls, or the declaration.docComment states that the caller owns the timeout and retry policy. Receiving only the client is not enough.',
   insufficient_context:

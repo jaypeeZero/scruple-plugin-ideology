@@ -229,6 +229,62 @@
         "safe",
         "test-file"
       ]
+    },
+    {
+      "id": "ok-fallback-to-given-record",
+      "filename": "src/auth/user.ts",
+      "source": "interface User {\n  userName: string\n  fullName: string | null\n}\n\nexport const findUser = (users: User[], stamp: User): User =>\n  users.find(user => user.userName === stamp.userName) ?? stamp\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "When no richer user matches, findUser returns the stamp user it was given, a real record with its own nulls for unknown details, not a made-up stand-in.",
+      "tags": [
+        "safe",
+        "nullish",
+        "given-record"
+      ]
+    },
+    {
+      "id": "ok-named-not-checked-constant",
+      "filename": "src/accounts/accountLine.ts",
+      "source": "const ACCOUNT_LINES = new Map<unknown, string>([\n  [true, 'An account exists for this person.'],\n  [false, 'No account was found for this person.'],\n])\nconst ACCOUNT_NOT_CHECKED = 'Whether this person has an account was not checked.'\n\nexport const accountLine = (hasAccount: unknown): string => ACCOUNT_LINES.get(hasAccount) ?? ACCOUNT_NOT_CHECKED\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "A value other than true or false falls back to ACCOUNT_NOT_CHECKED, a named constant that says the check was not made, so the absence stays visible to the reader instead of being hidden.",
+      "tags": [
+        "safe",
+        "nullish",
+        "named-unknown"
+      ]
+    },
+    {
+      "id": "ok-generic-noun-in-summary",
+      "filename": "src/requests/summaries.ts",
+      "source": "interface RemovalDetails {\n  memberName?: string\n}\n\nexport const removalSummary = (details: RemovalDetails): string => `Remove ${details.memberName || 'a member'}`\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "Without a member name the summary reads Remove a member: a generic noun that a person reads as no name given, not a stand-in that looks like a real name, and the text is never stored as data.",
+      "tags": [
+        "safe",
+        "or",
+        "display-text"
+      ]
+    },
+    {
+      "id": "ok-labelled-unknown-line",
+      "filename": "src/requests/detailLines.ts",
+      "source": "interface RoleDetails {\n  currentRole?: string\n}\n\nexport const currentRoleLine = (details: RoleDetails): string => `Current role: ${details.currentRole || 'unknown'}`\n",
+      "rule_id": "ideology/model-absence",
+      "expected_finding": false,
+      "expected_choice": "absence_is_modelled",
+      "rationale": "The line labels the field and shows unknown in its place, so a person reading it sees that the role was not given; nothing reads it back as a role.",
+      "tags": [
+        "safe",
+        "or",
+        "display-text"
+      ]
     }
   ]
 }

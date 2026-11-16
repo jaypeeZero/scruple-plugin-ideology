@@ -28,7 +28,7 @@ const criteria = {
   default_is_a_declared_option:
     'The defaulted value is a setting the caller may omit by contract (a page size, timeout, retry count, flag, formatting choice, optional collaborator) and the default is the documented behaviour of omitting it.',
   absence_is_modelled:
-    'The function keeps absence visible: it returns null or undefined, an empty result that callers must check, a discriminated result, or it throws or fails fast.',
+    'The function keeps absence visible: it returns null or undefined, an empty result that callers must check, a discriminated result, or it throws or fails fast; or the fallback is a real value rather than a stand-in: a value the function was given (the input record itself), or a named constant whose name says the value is unknown or was not checked; or wording for a person to read that is a generic noun phrase in place of a name (such as \'a member\') or a labelled field shown as \'unknown\' or \'unassigned\' (such as \'Role: unknown\'), and is never stored. A placeholder such as \'N/A\' or an empty string put where a name or identifier is read as present still hides the absence.',
   insufficient_context:
     'The function shown does not establish what the defaulted value means or who consumes it.'
 }

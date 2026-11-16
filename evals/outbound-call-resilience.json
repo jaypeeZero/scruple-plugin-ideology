@@ -154,6 +154,33 @@
         "safe",
         "test-file"
       ]
+    },
+    {
+      "id": "ok-own-repository-interface",
+      "filename": "src/services/orderService.ts",
+      "source": "import type { OrderRepository } from './interfaces.js'\n\nexport class OrderService {\n  readonly #orders: OrderRepository\n\n  constructor (orders: OrderRepository) {\n    this.#orders = orders\n  }\n\n  async rename (id: string, name: string) {\n    return await this.#orders.update(id, { name })\n  }\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "rename awaits update on an OrderRepository, an interface this codebase defines and imports from its own module; the timeout and retry policy belong to that repository's implementation, not to every service that calls it.",
+      "tags": [
+        "safe",
+        "own-interface"
+      ]
+    },
+    {
+      "id": "violation-orm-table-in-repository",
+      "filename": "src/repositories/orderRepository.ts",
+      "source": "import type { ModelStatic } from 'sequelize'\nimport type { OrderRow } from './orderModel.js'\n\nexport class PostgresOrderRepository {\n  readonly #table: ModelStatic<OrderRow>\n\n  constructor (table: ModelStatic<OrderRow>) {\n    this.#table = table\n  }\n\n  async findById (id: string) {\n    const row = await this.#table.findByPk(id)\n    return row === null ? null : { id: row.id }\n  }\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "findById awaits findByPk on a Sequelize ModelStatic received from the caller, the vendor client itself, with no timeout, so a hung database hangs this repository; receiving the vendor client gives it no policy.",
+      "tags": [
+        "violation",
+        "database",
+        "sequelize"
+      ]
     }
   ]
 }

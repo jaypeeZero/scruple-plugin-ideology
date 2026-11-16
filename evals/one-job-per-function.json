@@ -28,7 +28,7 @@
       "rule_id": "ideology/one-job-per-function",
       "expected_finding": true,
       "expected_choice": "mixes_concerns",
-      "rationale": "The function validates the input shape, persists it, and logs a formatted message, three distinct concerns in one body.",
+      "rationale": "The function validates the input shape inline and persists it, two concerns in one body. The log line records what happened and is not a concern of its own.",
       "tags": [
         "violation",
         "validation",
@@ -141,6 +141,21 @@
         "safe",
         "test-file"
       ]
+    },
+    {
+      "id": "ok-orchestration-logs-event",
+      "filename": "src/services/renameProject.ts",
+      "rule_id": "ideology/one-job-per-function",
+      "expected_finding": false,
+      "expected_candidates": 1,
+      "expected_choice": "single_concern",
+      "rationale": "The service orchestrates an injected repository, branches on its results, and records what happened through an injected logger. Recording the event is part of orchestrating, not a second concern.",
+      "tags": [
+        "safe",
+        "orchestration",
+        "logging"
+      ],
+      "source": "export const renameProject = async (id, title, editor, repo, logger) => {\n  const stored = await repo.findById(id)\n  if (stored === null) throw new ProjectNotFoundError(id)\n  if (stored.title === title) return stored\n  const updated = await repo.update(id, { title }, editor, new Date())\n  logger.info('Project renamed', { projectId: id, from: stored.title, to: updated.title, changedAt: updated.updatedAt.toISOString() })\n  return updated\n}\n"
     }
   ]
 }
