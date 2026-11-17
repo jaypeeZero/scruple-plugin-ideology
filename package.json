@@ -36,11 +36,11 @@
     "@eslint/js": "^10.0.1",
     "@scruple/core": "latest",
     "@scruple/parser-oxc": "latest",
-    "@scruple/provider-jev": "latest",
     "@types/node": "^24.13.4",
     "ava": "^6.4.1",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
+    "scruple-provider-claude-cli": "file:../scruple-provider-claude-cli",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0"

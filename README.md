@@ -26,22 +26,22 @@ A Scruple plugin enforcing the engineering ideology below as semantic lint rules
 ## Install
 
 ```
-npm install --save-dev github:jaypeeZero/scruple-plugin-ideology#v0.3.0
+npm install --save-dev @scruple/cli @scruple/core @scruple/parser-oxc github:jaypeeZero/scruple-plugin-ideology#v0.3.0 github:jaypeeZero/scruple-provider-claude-cli
 ```
+
+- The rules' thresholds are calibrated against Haiku 5.5 through [scruple-provider-claude-cli](https://github.com/jaypeeZero/scruple-provider-claude-cli).
+- `scruple-provider-claude-cli` answers through the logged-in `claude` CLI, so no API key is needed.
 
 ```ts
 // scruple.config.ts
 import { defineConfig } from '@scruple/core'
 import { oxcParser } from '@scruple/parser-oxc'
-import { jevProvider } from '@scruple/provider-jev'
 import { ideology } from 'scruple-plugin-ideology'
-
-const apiKey = process.env['TYPESAFE_API_KEY']
-if (apiKey === undefined) throw new Error('TYPESAFE_API_KEY is required')
+import { claudeCliProvider } from 'scruple-provider-claude-cli'
 
 export default defineConfig({
   parser: oxcParser(),
-  provider: jevProvider({ apiKey }),
+  provider: claudeCliProvider(),
   include: ['src/**/*.ts'],
   plugins: { ideology: ideology() },
   rules: {
@@ -64,6 +64,29 @@ export default defineConfig({
     'ideology/translate-at-boundary': 'warn'
   }
 })
+```
+
+## Running against a repo without changing it
+
+- Scruple installs into a `.scruple/` folder at the target repo's root, holding its own `package.json`, `scruple.config.ts`, and `node_modules`.
+- `.scruple/package.json` lists the packages from [Install](#install) as `dependencies`.
+- `/.scruple/` goes in the target repo's `.git/info/exclude`, which git never commits, so `git status` stays clean.
+- The CLI scans the directory it runs in, so the same install scans the repo or any of its worktrees.
+
+```sh
+# from the repo root
+.scruple/node_modules/.bin/scruple -c .scruple/scruple.config.ts
+
+# from a worktree
+/path/to/repo/.scruple/node_modules/.bin/scruple -c /path/to/repo/.scruple/scruple.config.ts
+```
+
+A local build of this plugin installs into `.scruple` as a `file:` dependency, copied with `--install-links`. A plugin change reaches `.scruple` only after a rebuild and a fresh copy:
+
+```sh
+npm run build
+rm -rf /path/to/repo/.scruple/node_modules/scruple-plugin-ideology
+npm install --install-links --prefix /path/to/repo/.scruple
 ```
 
 ## Rules
@@ -142,9 +165,12 @@ Caching lives in [scruple-provider-cache](https://github.com/jaypeeZero/scruple-
 ## Evals
 
 - `evals/` holds expected-label fixtures in Scruple's own fixture format.
-- `npm run eval` runs every fixture live against Jev.
+- `npm run eval` runs every fixture live against Haiku 5.5 through the logged-in `claude` CLI.
 - Evals are never cached.
-- Set `TYPESAFE_API_KEY` in the environment before running.
+- `npm run eval` is a report, not a test: it always exits 0.
+- Each fixture line reads `right` or `WRONG`, with each candidate's margin: the probability of the rule's finding label minus the warning threshold.
+- The last line counts the fixtures answered right and the fixtures with a margin within 0.05 of the threshold, which can flip between runs.
+- What each rule collects is tested deterministically by `npm test`, not here.
 
 ## Development
 

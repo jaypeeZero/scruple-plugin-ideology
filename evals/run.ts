@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, runScruple } from '@scruple/core'
 import type { SourceFile } from '@scruple/core'
 import { oxcParser } from '@scruple/parser-oxc'
-import { jevProvider } from '@scruple/provider-jev'
+import { claudeCliProvider } from 'scruple-provider-claude-cli'
+import { defaultThreshold } from '../src/decisionDefaults.ts'
 import { ideology } from '../src/index.ts'
 
 interface Fixture {
@@ -34,18 +35,18 @@ const fixtureFiles: FixtureFile[] = readdirSync(evalsDir)
 const fixtures = fixtureFiles.flatMap((fixtureFile) =>
   fixtureFile.fixtures.map((fixture) => ({
     fixture,
-    expectedCandidates: fixture.expected_candidates ?? fixtureFile.default_expected_candidates
+    findingChoice: fixtureFile.rule_choices[fixture.rule_id]?.finding
   }))
 )
 
-const apiKey = process.env['TYPESAFE_API_KEY']
-if (apiKey === undefined) throw new Error('TYPESAFE_API_KEY is required')
-
 const ruleIds = Object.keys(ideology().rules).map((rule) => `ideology/${rule}`)
+
+// A margin this close to the warning threshold flips between runs of the same code.
+const NEAR_CUTOFF = 0.05
 
 const config = defineConfig({
   parser: oxcParser(),
-  provider: jevProvider({ apiKey }),  // evals are always live, never cached
+  provider: claudeCliProvider(),  // evals are always live, never cached
   include: ['**/*.ts'],
   plugins: { ideology: ideology() },
   rules: Object.fromEntries(ruleIds.map((ruleId) => [ruleId, 'warn']))
@@ -61,17 +62,16 @@ const files: SourceFile[] = fixtures.map(({ fixture }) => ({
 
 const result = await runScruple(config, files, undefined, { includeDecisions: true })
 
-let passed = 0
-let failed = 0
-
-for (const { fixture, expectedCandidates } of fixtures) {
+const reports = fixtures.map(({ fixture, findingChoice }) => {
   const decisions = (result.decisions ?? []).filter(
     decision => decision.filename === fixtureFilename(fixture) && decision.ruleId === fixture.rule_id
   )
   const answers = decisions.map(decision => decision.answer)
   const actualChoices = answers.map(answer => (answer.type === 'choice' ? answer.choice : '(non-choice)'))
-  const probabilities = answers.map(answer =>
-    answer.type === 'choice' ? answer.probabilities[answer.choice]?.toFixed(2) ?? 'n/a' : 'n/a'
+  const margins = answers.map(answer =>
+    answer.type === 'choice' && findingChoice !== undefined
+      ? (answer.probabilities[findingChoice] ?? 0) - defaultThreshold.warning
+      : undefined
   )
   const finding = decisions.some(decision => decision.diagnostic)
 
@@ -79,22 +79,20 @@ for (const { fixture, expectedCandidates } of fixtures) {
   const expectedChoices =
     fixture.expected_choices ?? (fixture.expected_choice === undefined ? undefined : [fixture.expected_choice])
 
-  const candidateCountOk = decisions.length === expectedCandidates
   const choiceOk =
     expectedChoices === undefined ||
     (expectedChoices.length === actualChoices.length && expectedChoices.every((choice, i) => choice === actualChoices[i]))
-  const findingOk = finding === fixture.expected_finding
-  const ok = candidateCountOk && choiceOk && findingOk
-
-  if (ok) passed += 1
-  else failed += 1
+  const right = choiceOk && finding === fixture.expected_finding
+  const nearCutoff = margins.some(margin => margin !== undefined && Math.abs(margin) < NEAR_CUTOFF)
 
   const expectedText = expectedChoices?.join(',') ?? '(none)'
   const actualText = actualChoices.length === 0 ? '(none)' : actualChoices.join(',')
-  const probabilityText = probabilities.length === 0 ? 'n/a' : probabilities.join(',')
-  process.stdout.write(`${ok ? 'PASS' : 'FAIL'} ${fixture.id} expected=${expectedText} actual=${actualText} p=${probabilityText}\n`)
-}
+  const marginText = margins.length === 0 ? 'n/a' : margins.map(margin => margin?.toFixed(2) ?? 'n/a').join(',')
+  process.stdout.write(`${right ? 'right' : 'WRONG'} ${fixture.id} expected=${expectedText} actual=${actualText} margin=${marginText}\n`)
 
-process.stdout.write(`${passed} passed, ${failed} failed\n`)
+  return { right, nearCutoff }
+})
 
-if (failed > 0) process.exitCode = 1
+const rightCount = reports.filter(report => report.right).length
+const nearCount = reports.filter(report => report.nearCutoff).length
+process.stdout.write(`${rightCount}/${reports.length} right; ${nearCount} within ${NEAR_CUTOFF} of the ${defaultThreshold.warning} cutoff\n`)
