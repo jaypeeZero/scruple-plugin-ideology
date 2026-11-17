@@ -94,7 +94,7 @@ export default defineConfig({
 
 | Option | Default | Rules |
 |---|---|---|
-| `threshold` | `{ warning: 0.7, error: 0.95 }` | every rule |
+| `threshold` | `{ warning: 0.75, error: 0.95 }` | every rule |
 | `minConfidence` | `0.7` | every rule |
 | `testFilePattern` | `(\.(spec\|test)\|[Ff]akes?\|[Dd]oubles?\|[Mm]ocks?\|[Ss]tubs?)\.[cm]?[jt]sx?$` | every rule |
 | `compositionRootPattern` | `(^\|/)index\.[cm]?[jt]sx?$` | `inject-dependencies`, `no-hardcoded-config`, `no-infrastructure-in-core`, `no-vendor-types-in-core` |
@@ -116,8 +116,8 @@ export default defineConfig({
 | `one-job-per-function` | `ioCallPatterns` | `['^(fetch\|axios\|got)\b', '\.(query\|execute\|find\w*\|save\|insert\|update\|delete\|put\w*\|get\w*Object\|send\|publish\|subscribe\|readFile\w*\|writeFile\w*\|connect)$']` |
 | `one-job-per-function` | `presentationCallPatterns` | `['^(console\|logger\|log)\.', '\.(toFixed\|toLocale\w+\|padStart\|padEnd\|format\|render)$']` |
 | `one-job-per-function` | `validationCallPatterns` | `['\.(validate\|assert\w*\|check\w*\|is[A-Z]\w*)$', '^(assert\|invariant\|z\.\|yup\.\|joi\.)']` |
-| `outbound-call-resilience` | `outboundCallPatterns` | `['^(fetch\|axios\|got\|ky\|undici)\b', '\.(get\|post\|put\|patch\|delete\|request\|send\|publish\|query\|execute\|find\w*\|save\|insert\|update\|connect\|invoke\|call)$', '^\w+\.(charges\|customers\|messages\|objects\|invoices)\.']` |
-| `outbound-call-resilience` | `resiliencePatterns` | `['\b(timeout\|timeoutMs\|signal\|AbortSignal\|AbortController\|withTimeout\|retry\|retries\|maxAttempts\|backoff\|circuit\|fallback\|deadline)\b', 'Promise\.(race\|any\|allSettled)\b', '\.timeout\(']` |
+| `outbound-call-resilience` | `outboundCallPatterns` | `['^(fetch\|axios\|got\|ky\|undici)\b']` |
+| `outbound-call-resilience` | `resiliencePatterns` | `['\b(\w*(timeout\|Timeout\|TIMEOUT)\w*\|signal\|AbortSignal\|AbortController\|retry\|retries\|maxAttempts\|backoff\|circuit\|fallback\|deadline)\b', 'Promise\.(race\|any\|allSettled)\b', '\.timeout\(']` |
 | `prefer-composition` | `minSteps` | `3` |
 | `prefer-composition` | `minNesting` | `4` |
 | `prefer-composition` | `minChain` | `5` |

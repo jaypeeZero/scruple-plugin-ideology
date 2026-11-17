@@ -44,7 +44,7 @@ test('produces one candidate with an empty callee and the fetch call listed when
   t.deepEqual(state.resilience, [])
 })
 
-test('produces one candidate with an empty resilience list when a database query is awaited without a guard', t => {
+test('produces no candidates for a query through an injected pool, whose policy belongs where the pool is built', t => {
   const source = `
     import { Pool } from 'pg'
 
@@ -55,15 +55,10 @@ test('produces one candidate with an empty resilience list when a database query
   `
   const document = parser.parse('src/services/orders.ts', source)
 
-  const candidates = outboundCallResilience().collect(document)
-
-  t.is(candidates.length, 1)
-  const state = candidates[0].state as { outboundCalls: { callee: string }[]; resilience: string[] }
-  t.is(state.outboundCalls[0].callee, 'pool.query')
-  t.deepEqual(state.resilience, [])
+  t.deepEqual(outboundCallResilience().collect(document), [])
 })
 
-test('produces one candidate when an awaited vendor SDK call has no guard', t => {
+test('produces no candidates for a vendor SDK call through an injected client', t => {
   const source = `
     import Stripe from 'stripe'
 
@@ -73,29 +68,47 @@ test('produces one candidate when an awaited vendor SDK call has no guard', t =>
   `
   const document = parser.parse('src/services/payments.ts', source)
 
-  const candidates = outboundCallResilience().collect(document)
-
-  t.is(candidates.length, 1)
-  const state = candidates[0].state as { outboundCalls: { callee: string }[] }
-  t.is(state.outboundCalls[0].callee, 'stripe.charges.create')
+  t.deepEqual(outboundCallResilience().collect(document), [])
 })
 
-test('produces one candidate when an awaited queue publish has no guard', t => {
+test('produces no candidates for a repository query through an ORM table it was given', t => {
   const source = `
-    export const emit = async (
-      producer: { send: (message: unknown) => Promise<void> },
-      event: unknown
-    ) => {
-      await producer.send({ topic: 'events', messages: [event] })
+    import type { ModelStatic } from 'sequelize'
+
+    export class PostgresOrderRepository {
+      readonly #table: ModelStatic<OrderRow>
+
+      constructor (table: ModelStatic<OrderRow>) {
+        this.#table = table
+      }
+
+      async findById (id: string) {
+        const row = await this.#table.findByPk(id)
+        return row === null ? null : { id: row.id }
+      }
     }
   `
-  const document = parser.parse('src/services/events.ts', source)
+  const document = parser.parse('src/repositories/orderRepository.ts', source)
+
+  t.deepEqual(outboundCallResilience().collect(document), [])
+})
+
+test('produces one candidate for an awaited axios call made on the default instance, with no client built for it', t => {
+  const source = `
+    import axios from 'axios'
+
+    export const loadRates = async (url: string) => {
+      const response = await axios.get(url)
+      return response.data
+    }
+  `
+  const document = parser.parse('src/services/ratesAxios.ts', source)
 
   const candidates = outboundCallResilience().collect(document)
 
   t.is(candidates.length, 1)
   const state = candidates[0].state as { outboundCalls: { callee: string }[] }
-  t.is(state.outboundCalls[0].callee, 'producer.send')
+  t.is(state.outboundCalls[0].callee, 'axios.get')
 })
 
 test('produces one candidate with non-empty resilience when fetch carries an abort signal timeout', t => {
@@ -116,11 +129,8 @@ test('produces one candidate with non-empty resilience when fetch carries an abo
 
 test('produces one candidate with non-empty resilience when the awaited call sits inside a retry wrapper', t => {
   const source = `
-    export const loadRates = async (
-      client: { get: (url: string) => Promise<unknown> },
-      url: string
-    ) => {
-      return retry(async () => await client.get(url), { retries: 3 })
+    export const loadRates = async (url: string) => {
+      return retry(async () => await fetch(url), { retries: 3 })
     }
   `
   const document = parser.parse('src/services/ratesRetryWrapper.ts', source)
@@ -129,25 +139,23 @@ test('produces one candidate with non-empty resilience when the awaited call sit
 
   t.is(candidates.length, 1)
   const state = candidates[0].state as { outboundCalls: { callee: string }[]; resilience: string[] }
-  t.is(state.outboundCalls[0].callee, 'client.get')
+  t.is(state.outboundCalls[0].callee, 'fetch')
   t.true(state.resilience.length > 0)
 })
 
 test('produces one candidate with the race as resilience when an outbound call is nested inside an awaited Promise.race', t => {
   const source = `
-    import { Pool } from 'pg'
-
-    export const listOrders = async (pool: Pool) => {
-      return await Promise.race([pool.query('select * from orders'), rejectAfter(3000)])
+    export const loadRates = async (url: string) => {
+      return await Promise.race([fetch(url), rejectAfter(3000)])
     }
   `
-  const document = parser.parse('src/services/ordersPromiseRace.ts', source)
+  const document = parser.parse('src/services/ratesPromiseRace.ts', source)
 
   const candidates = outboundCallResilience().collect(document)
 
   t.is(candidates.length, 1)
   const state = candidates[0].state as { outboundCalls: { callee: string }[]; resilience: string[] }
-  t.deepEqual(state.outboundCalls.map(call => call.callee), ['pool.query'])
+  t.deepEqual(state.outboundCalls.map(call => call.callee), ['fetch'])
   t.is(state.resilience.length, 1)
   t.true(state.resilience[0].includes('Promise.race'))
 })
@@ -207,13 +215,12 @@ test('produces no candidates for a test file even with an unguarded awaited fetc
 
 test('collapses three unguarded outbound calls in one function into a single candidate listing all three', t => {
   const source = `
-    export const syncAll = async (
-      pool: { query: (sql: string) => Promise<unknown> },
-      producer: { send: (message: unknown) => Promise<void> }
-    ) => {
-      await pool.query('one')
-      await pool.query('two')
-      await producer.send({ topic: 'x', messages: [] })
+    import axios from 'axios'
+
+    export const syncAll = async (url: string) => {
+      await fetch(url + '/one')
+      await fetch(url + '/two')
+      await axios.post(url, {})
     }
   `
   const document = parser.parse('src/services/syncAll.ts', source)
@@ -276,6 +283,73 @@ test('an awaited call on an infrastructure import binding counts as outbound eve
   t.is(candidates.length, 1)
   const state = candidates[0].state as { outboundCalls: { callee: string }[] }
   t.is(state.outboundCalls[0].callee, 'AWS.customCall')
+})
+
+test('produces one candidate listing the construction when composition code builds an axios client', t => {
+  const source = `
+    import axios from 'axios'
+
+    export const buildClients = (config: RatesConfig) => {
+      const http = axios.create({ baseURL: config.baseUrl })
+      return { rates: new HttpRatesClient(http) }
+    }
+  `
+  const document = parser.parse('src/app/composition/clients.ts', source)
+
+  const candidates = outboundCallResilience().collect(document)
+
+  t.is(candidates.length, 1)
+  const state = candidates[0].state as { clientConstructions: string[]; outboundCalls: unknown[] }
+  t.deepEqual(state.clientConstructions, ['axios.create({ baseURL: config.baseUrl })'])
+  t.deepEqual(state.outboundCalls, [])
+})
+
+test('produces one candidate when a function builds a pg pool', t => {
+  const source = `
+    import { Pool } from 'pg'
+
+    export const createPool = (url: string): Pool => new Pool({ connectionString: url })
+  `
+  const document = parser.parse('src/app/conf/createPool.ts', source)
+
+  const candidates = outboundCallResilience().collect(document)
+
+  t.is(candidates.length, 1)
+  const state = candidates[0].state as { clientConstructions: string[] }
+  t.deepEqual(state.clientConstructions, ['new Pool({ connectionString: url })'])
+})
+
+test('produces one candidate with the statement timeout as resilience when a function builds a connection from a class it was given', t => {
+  const source = `
+    export const connect = async (url: string, SequelizeClass: new (url: string, options: object) => Db) => {
+      const db = new SequelizeClass(url, { dialectOptions: { statement_timeout: 30000 }, pool: { acquire: 30000 } })
+      await db.authenticate()
+      return db
+    }
+  `
+  const document = parser.parse('src/app/conf/connect.ts', source)
+
+  const candidates = outboundCallResilience().collect(document)
+
+  t.is(candidates.length, 1)
+  const state = candidates[0].state as { clientConstructions: string[]; resilience: string[] }
+  t.is(state.clientConstructions.length, 1)
+  t.true(state.clientConstructions[0].startsWith('new SequelizeClass('))
+  t.is(state.resilience.length, 1)
+})
+
+test('produces no candidates for constructing this codebase\'s own classes and plain values', t => {
+  const source = `
+    import { HttpRatesClient } from './ratesClient.js'
+
+    export const buildRates = (http: Http) => {
+      const createdAt = new Date()
+      return { rates: new HttpRatesClient(http), createdAt }
+    }
+  `
+  const document = parser.parse('src/app/composition/rates.ts', source)
+
+  t.deepEqual(outboundCallResilience().collect(document), [])
 })
 
 test('diagnose returns null for the resilience_present label', t => {

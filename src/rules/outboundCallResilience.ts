@@ -14,6 +14,7 @@ import { boundedText } from '../bounded.ts'
 import { declarationOf } from '../declaration.ts'
 import { topLevelFunctions } from '../functions.ts'
 import { defaultInfrastructureImportPatterns, importBindings } from '../importBindings.ts'
+import { boundNames, parameterListText, splitTopLevelParams } from '../parameters.ts'
 import { matchesAny } from '../patterns.ts'
 import { defaultTestFilePattern } from '../testFiles.ts'
 
@@ -25,34 +26,37 @@ export interface OutboundCallResilienceOptions extends DecisionRuleOptions {
 
 const infrastructureImportPatterns = defaultInfrastructureImportPatterns.map((pattern) => new RegExp(pattern))
 
-const defaultOutboundCallPatterns = [
-  '^(fetch|axios|got|ky|undici)\\b',
-  '\\.(get|post|put|patch|delete|request|send|publish|query|execute|find\\w*|save|insert|update|connect|invoke|call)$',
-  '^\\w+\\.(charges|customers|messages|objects|invoices)\\.'
-]
+// A call site is a candidate only when the call goes straight to the network. A call
+// through a client the function was given (a pool, an SDK, an ORM table) carries
+// whatever policy that client was built with, so it is judged where it is built.
+const defaultOutboundCallPatterns = ['^(fetch|axios|got|ky|undici)\\b']
+
+// A factory call builds a client when its root is a vendor binding (`axios.create`,
+// a `createClient` imported from redis).
+const clientFactoryCallPatterns = [/\.create$/, /^create[A-Z]/, /^connect$/]
 
 const defaultResiliencePatterns = [
-  '\\b(timeout|timeoutMs|signal|AbortSignal|AbortController|withTimeout|retry|retries|maxAttempts|backoff|circuit|fallback|deadline)\\b',
+  '\\b(\\w*(timeout|Timeout|TIMEOUT)\\w*|signal|AbortSignal|AbortController|retry|retries|maxAttempts|backoff|circuit|fallback|deadline)\\b',
   'Promise\\.(race|any|allSettled)\\b',
   '\\.timeout\\('
 ]
 
 const instructions =
-  'Does this function call an external service without any design for that service being slow or down - no timeout, abort signal, retry policy, fallback, or circuit - so that a hung or failed dependency hangs or fails this function indefinitely?'
+  'Does this function leave calls to an external service with no design for that service being slow or down - no timeout, abort signal, retry policy, fallback, or circuit? For each client it builds (clientConstructions), the configuration it is built with is the policy for every call made through it. For each call it makes straight to the network with no client in between (outboundCalls), the policy is at the call.'
 
 const criteria = {
   unguarded_outbound_call:
-    'At least one awaited call to a network, database, queue, or third-party service has no timeout, abort signal, retry, fallback, or circuit visible here, and nothing in the function name, a wrapper, or the declaration.docComment indicates the policy lives elsewhere. A vendor client received as a parameter still counts: injecting the client does not give it a policy.',
+    'A client, connection, or pool built here for a network, database, queue, or third-party service is configured with no request, statement, or query timeout, deadline, or retry policy, so calls made through it can wait forever; a timeout on acquiring or opening a connection bounds only getting the connection, not the calls made on it. Or a call made straight to the network has no timeout, abort signal, retry, fallback, or circuit, and nothing in the function name, a wrapper, or the declaration.docComment says the policy lives elsewhere.',
   resilience_present:
-    'Every outbound call is covered by a timeout, signal, retry, fallback, or circuit in this body, or is made through a wrapper whose name states the policy, or goes to a repository, service, or client interface this codebase defines (its type is imported from one of the codebase\'s own modules, a relative import), so the policy belongs to that interface\'s implementation. A parameter typed inline or with a vendor package\'s type is not such an interface.',
+    'Every client built here is configured with a request, statement, or query timeout, deadline, or retry policy for the calls made through it, and every call made straight to the network has a timeout, signal, retry, fallback, or circuit in this body (a retry wrapper around it, a catch that falls back to another value), or goes through a wrapper whose name states the policy.',
   resilience_owned_by_caller:
-    'The caller passes the policy in: the function receives an abort signal, timeout, or deadline and hands it to its outbound calls, or the declaration.docComment states that the caller owns the timeout and retry policy. Receiving only the client is not enough.',
+    'The caller passes the policy in: the function receives an abort signal, timeout, or deadline and hands it to its outbound calls or to the client it builds, or the declaration.docComment states that the caller owns the timeout and retry policy.',
   insufficient_context:
-    'Whether the callee is an external service, or whether a policy wraps it elsewhere, cannot be determined from the function shown.'
+    'Whether what is built or called is an external service, or whether its configuration bounds calls, cannot be determined from the function shown.'
 }
 
 const finding = 'unguarded_outbound_call'
-const message = 'Give this external call a timeout, abort signal, or retry policy, or a fallback.'
+const message = 'Bound the calls to this external service: give the client a timeout or deadline where it is built, or give this direct call a timeout, abort signal, retry policy, or fallback.'
 
 const calleeRootPattern = /^[A-Za-z_$][\w$]*/
 
@@ -97,7 +101,28 @@ const outboundCallsFor = (
     .map((call) => ({ callee: call.callee ?? '', source: call.source, awaited: true }))
 }
 
-const resilienceLinesFor = (fn: FunctionTarget, resiliencePatterns: RegExp[]): string[] =>
+const clientConstructionsFor = (
+  fn: FunctionTarget,
+  document: ParsedDocument,
+  infrastructureBindingRoots: Set<string>
+): string[] => {
+  const parameters = new Set(splitTopLevelParams(parameterListText(fn.source)).flatMap(boundNames))
+  const isVendorBinding = (callee: string): boolean => infrastructureBindingRoots.has(calleeRoot(callee))
+
+  // A parameter only counts behind `new`: calling `.create` on a client the function
+  // was given makes a record, not a client.
+  const constructors = (document.facts?.constructors ?? [])
+    .filter((ctor) => isWithin(ctor.range, fn.range))
+    .filter((ctor) => isVendorBinding(ctor.callee ?? '') || parameters.has(ctor.callee ?? ''))
+    .map((ctor) => ctor.source)
+  const factoryCalls = fn.calls
+    .filter((call) => matchesAny(clientFactoryCallPatterns, call.callee) && isVendorBinding(call.callee))
+    .map((call) => call.source)
+
+  return [...constructors, ...factoryCalls]
+}
+
+const resilienceLinesFor =(fn: FunctionTarget, resiliencePatterns: RegExp[]): string[] =>
   fn.source
     .split('\n')
     .map((line) => line.trim())
@@ -120,7 +145,7 @@ export const outboundCallResilience: RuleFactory<OutboundCallResilienceOptions> 
 
   return {
     description:
-      'An awaited call to an external service needs a timeout, abort signal, retry policy, fallback, or circuit; failures from external services are the normal path, not edge cases.',
+      'Every call to an external service is bounded, by the client it goes through where that client is built, or at the call when it goes straight to the network; failures from external services are the normal path, not edge cases.',
     collect(document: ParsedDocument): RuleCandidate[] {
       if (testFilePattern.test(document.filename)) return []
 
@@ -130,7 +155,8 @@ export const outboundCallResilience: RuleFactory<OutboundCallResilienceOptions> 
 
       return topLevelFunctions(document).flatMap((fn) => {
         const outboundCalls = outboundCallsFor(fn, document, outboundCallPatterns, infrastructureBindingRoots)
-        if (outboundCalls.length === 0) return []
+        const clientConstructions = clientConstructionsFor(fn, document, infrastructureBindingRoots)
+        if (outboundCalls.length === 0 && clientConstructions.length === 0) return []
 
         const resilience = resilienceLinesFor(fn, resiliencePatterns)
 
@@ -151,6 +177,7 @@ export const outboundCallResilience: RuleFactory<OutboundCallResilienceOptions> 
               function: { text, truncated },
               declaration: declarationOf(document, fn),
               outboundCalls,
+              clientConstructions,
               resilience
             },
             question

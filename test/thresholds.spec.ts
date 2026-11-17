@@ -51,15 +51,15 @@ const answer = (choice: string, probability: number, confidence: number): Choice
 
 const ruleIds = Object.keys(rules).map((name) => `ideology/${name}`)
 
-test('every rule warns from 0.7, errors from 0.95, and drops answers below 0.7 confidence by default', async t => {
+test('every rule warns from 0.75, errors from 0.95, and drops answers below 0.7 confidence by default', async t => {
   t.is(ruleIds.length, 17)
   for (const ruleId of ruleIds) {
     const rule = rules[ruleId.replace(/^ideology\//, '')]()
     const candidate = await violationCandidate(ruleId)
     const finding = findingLabel(ruleId)
 
-    t.is(rule.diagnose(answer(finding, 0.69, 0.8), candidate), null, ruleId)
-    t.is(rule.diagnose(answer(finding, 0.7, 0.8), candidate)?.severity, 'warning', ruleId)
+    t.is(rule.diagnose(answer(finding, 0.74, 0.8), candidate), null, ruleId)
+    t.is(rule.diagnose(answer(finding, 0.75, 0.8), candidate)?.severity, 'warning', ruleId)
     t.is(rule.diagnose(answer(finding, 0.95, 0.8), candidate)?.severity, 'error', ruleId)
     t.is(rule.diagnose(answer(finding, 0.96, 0.69), candidate), null, ruleId)
   }

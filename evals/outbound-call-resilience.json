@@ -21,45 +21,43 @@
       ]
     },
     {
-      "id": "violation-bare-query",
+      "id": "ok-query-through-injected-pool",
       "filename": "src/services/orders.ts",
       "source": "import { Pool } from 'pg'\n\nexport const listOrders = async (pool: Pool) => {\n  const rows = await pool.query('select * from orders')\n  return rows\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
-      "expected_finding": true,
-      "expected_choice": "unguarded_outbound_call",
-      "rationale": "listOrders awaits a database query with no timeout, retry, or circuit visible in the function, so a slow or dead pool hangs the caller.",
+      "expected_finding": false,
+      "rationale": "The pool is a parameter, so the bound on this query belongs where the pool is built; the call site is not a candidate.",
       "tags": [
-        "violation",
-        "database",
-        "pg"
-      ]
+        "safe",
+        "policy-at-edge"
+      ],
+      "expected_candidates": 0
     },
     {
-      "id": "violation-bare-sdk",
+      "id": "ok-sdk-call-through-injected-client",
       "filename": "src/services/payments.ts",
       "source": "import Stripe from 'stripe'\n\nexport const charge = async (stripe: Stripe, cents: number) => {\n  return await stripe.charges.create({ amount: cents, currency: 'usd' })\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
-      "expected_finding": true,
-      "expected_choice": "unguarded_outbound_call",
-      "rationale": "charge awaits the Stripe SDK's charge creation directly with no timeout, retry, or fallback, so a Stripe outage fails this function with no design for it.",
+      "expected_finding": false,
+      "rationale": "The Stripe client is a parameter, so its policy belongs where it is built; the call site is not a candidate.",
       "tags": [
-        "violation",
-        "third-party-sdk",
-        "stripe"
-      ]
+        "safe",
+        "policy-at-edge"
+      ],
+      "expected_candidates": 0
     },
     {
-      "id": "violation-bare-publish",
+      "id": "ok-publish-through-injected-producer",
       "filename": "src/services/events.ts",
       "source": "export const emit = async (\n  producer: { send: (message: unknown) => Promise<void> },\n  event: unknown\n) => {\n  await producer.send({ topic: 'events', messages: [event] })\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
-      "expected_finding": true,
-      "expected_choice": "unguarded_outbound_call",
-      "rationale": "emit awaits a queue publish with no timeout, retry, or circuit, so a stalled broker hangs this function with no fallback.",
+      "expected_finding": false,
+      "rationale": "The producer is a parameter, so its policy belongs where it is built; the call site is not a candidate.",
       "tags": [
-        "violation",
-        "queue"
-      ]
+        "safe",
+        "policy-at-edge"
+      ],
+      "expected_candidates": 0
     },
     {
       "id": "ok-abort-signal",
@@ -78,11 +76,11 @@
     {
       "id": "ok-retry-wrapper",
       "filename": "src/services/ratesRetryWrapper.ts",
-      "source": "export const loadRates = async (\n  client: { get: (url: string) => Promise<unknown> },\n  url: string\n) => {\n  return retry(async () => await client.get(url), { retries: 3 })\n}\n",
+      "source": "export const loadRates = async (url: string) => {\n  return retry(async () => await fetch(url), { retries: 3 })\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
       "expected_finding": false,
       "expected_choice": "resilience_present",
-      "rationale": "loadRates's outbound call to client.get is awaited inside a retry wrapper whose options state the retry policy, so the call is covered rather than left unguarded.",
+      "rationale": "The fetch runs inside a retry wrapper with a retry count, a deliberate policy at the call.",
       "tags": [
         "safe",
         "retry"
@@ -90,11 +88,11 @@
     },
     {
       "id": "ok-promise-race-timeout",
-      "filename": "src/services/ordersPromiseRace.ts",
-      "source": "import { Pool } from 'pg'\n\nexport const listOrders = async (pool: Pool) => {\n  return await Promise.race([pool.query('select * from orders'), rejectAfter(3000)])\n}\n",
+      "filename": "src/services/ratesPromiseRace.ts",
+      "source": "export const loadRates = async (url: string) => {\n  return await Promise.race([fetch(url), rejectAfter(3000)])\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
       "expected_finding": false,
-      "rationale": "The query is raced against a rejecting timer, so a hung database rejects this function after three seconds instead of hanging it. The parser marks only the outer Promise.race as awaited; the collector treats a call nested inside an awaited expression as awaited too, so pool.query is the outbound call and the Promise.race line is the resilience evidence.",
+      "rationale": "The fetch is raced against a timer, which bounds the call.",
       "tags": [
         "safe",
         "promise-race"
@@ -161,25 +159,102 @@
       "source": "import type { OrderRepository } from './interfaces.js'\n\nexport class OrderService {\n  readonly #orders: OrderRepository\n\n  constructor (orders: OrderRepository) {\n    this.#orders = orders\n  }\n\n  async rename (id: string, name: string) {\n    return await this.#orders.update(id, { name })\n  }\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
       "expected_finding": false,
-      "expected_choice": "resilience_present",
-      "rationale": "rename awaits update on an OrderRepository, an interface this codebase defines and imports from its own module; the timeout and retry policy belong to that repository's implementation, not to every service that calls it.",
+      "rationale": "The repository is a collaborator this codebase defines; its policy belongs where its connection is built.",
       "tags": [
         "safe",
-        "own-interface"
-      ]
+        "policy-at-edge"
+      ],
+      "expected_candidates": 0
     },
     {
-      "id": "violation-orm-table-in-repository",
+      "id": "ok-orm-table-in-repository",
       "filename": "src/repositories/orderRepository.ts",
       "source": "import type { ModelStatic } from 'sequelize'\nimport type { OrderRow } from './orderModel.js'\n\nexport class PostgresOrderRepository {\n  readonly #table: ModelStatic<OrderRow>\n\n  constructor (table: ModelStatic<OrderRow>) {\n    this.#table = table\n  }\n\n  async findById (id: string) {\n    const row = await this.#table.findByPk(id)\n    return row === null ? null : { id: row.id }\n  }\n}\n",
       "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "rationale": "The ORM table was given to the repository, so the bound on its queries belongs where the connection is built, not in each repository method.",
+      "tags": [
+        "safe",
+        "policy-at-edge"
+      ],
+      "expected_candidates": 0
+    },
+    {
+      "id": "violation-axios-client-without-timeout",
+      "filename": "src/app/composition/clients.ts",
+      "source": "import axios from 'axios'\nimport { HttpRatesClient } from '../externalClients/ratesClient.js'\nimport type { RatesConfig } from '../conf/ratesConfig.js'\n\nexport const buildClients = (rates: RatesConfig) => {\n  const http = axios.create({ baseURL: rates.baseUrl })\n  return { rates: new HttpRatesClient(http, rates) }\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
       "expected_finding": true,
       "expected_choice": "unguarded_outbound_call",
-      "rationale": "findById awaits findByPk on a Sequelize ModelStatic received from the caller, the vendor client itself, with no timeout, so a hung database hangs this repository; receiving the vendor client gives it no policy.",
+      "rationale": "Composition builds the axios client every rates call goes through and sets no timeout, so every call through it can wait forever.",
       "tags": [
         "violation",
-        "database",
-        "sequelize"
+        "policy-at-edge"
+      ]
+    },
+    {
+      "id": "ok-axios-client-with-timeout",
+      "filename": "src/app/composition/clients.ts",
+      "source": "import axios from 'axios'\nimport { HttpRatesClient } from '../externalClients/ratesClient.js'\nimport type { RatesConfig } from '../conf/ratesConfig.js'\n\nconst RATES_TIMEOUT_MS = 30_000\n\nexport const buildClients = (rates: RatesConfig) => {\n  const http = axios.create({ baseURL: rates.baseUrl, timeout: RATES_TIMEOUT_MS })\n  return { rates: new HttpRatesClient(http, rates) }\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "Composition builds the axios client with a timeout, which bounds every call made through it.",
+      "tags": [
+        "safe",
+        "policy-at-edge"
+      ]
+    },
+    {
+      "id": "violation-connection-without-statement-timeout",
+      "filename": "src/app/conf/createConnection.ts",
+      "source": "import type { PostgresConfig } from './postgresConfig.js'\n\ninterface Authenticatable {\n  authenticate: () => Promise<void>\n}\n\nexport const createConnection = async function <T extends Authenticatable>(\n  postgres: PostgresConfig,\n  SequelizeClass: new (connectString: string, options: object) => T,\n): Promise<T> {\n  const connectString = `postgres://${postgres.user}:${postgres.password}@${postgres.host}:${postgres.port}/${postgres.database}`\n  const sequelize = new SequelizeClass(connectString, {\n    dialectOptions: { ssl: true },\n    pool: { max: 7, min: 0, acquire: 30000, idle: 10000 },\n  })\n  await sequelize.authenticate()\n  return sequelize\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "The connection bounds only acquiring a pooled connection; no statement or query timeout bounds the queries run on it.",
+      "tags": [
+        "violation",
+        "policy-at-edge"
+      ]
+    },
+    {
+      "id": "ok-connection-with-statement-timeout",
+      "filename": "src/app/conf/createConnection.ts",
+      "source": "import type { PostgresConfig } from './postgresConfig.js'\n\ninterface Authenticatable {\n  authenticate: () => Promise<void>\n}\n\nexport const createConnection = async function <T extends Authenticatable>(\n  postgres: PostgresConfig,\n  SequelizeClass: new (connectString: string, options: object) => T,\n): Promise<T> {\n  const connectString = `postgres://${postgres.user}:${postgres.password}@${postgres.host}:${postgres.port}/${postgres.database}`\n  const sequelize = new SequelizeClass(connectString, {\n    dialectOptions: { ssl: true, statement_timeout: 30000 },\n    pool: { max: 7, min: 0, acquire: 30000, idle: 10000 },\n  })\n  await sequelize.authenticate()\n  return sequelize\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": false,
+      "expected_choice": "resilience_present",
+      "rationale": "The connection sets a statement timeout, which bounds every query run through it.",
+      "tags": [
+        "safe",
+        "policy-at-edge"
+      ]
+    },
+    {
+      "id": "violation-pg-pool-without-timeout",
+      "filename": "src/app/conf/createPool.ts",
+      "source": "import { Pool } from 'pg'\n\nexport const createPool = (url: string): Pool => new Pool({ connectionString: url })\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "The pool is built with only a connection string, so no query through it is bounded.",
+      "tags": [
+        "violation",
+        "policy-at-edge"
+      ]
+    },
+    {
+      "id": "violation-axios-default-instance",
+      "filename": "src/services/ratesAxios.ts",
+      "source": "import axios from 'axios'\n\nexport const loadRates = async (url: string) => {\n  const response = await axios.get(url)\n  return response.data\n}\n",
+      "rule_id": "ideology/outbound-call-resilience",
+      "expected_finding": true,
+      "expected_choice": "unguarded_outbound_call",
+      "rationale": "The call goes through axios's default instance, which no edge configured and which has no timeout.",
+      "tags": [
+        "violation",
+        "call-site"
       ]
     }
   ]
