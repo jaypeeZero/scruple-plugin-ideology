@@ -40,7 +40,7 @@
     "ava": "^6.4.1",
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
-    "scruple-provider-claude-cli": "file:../scruple-provider-claude-cli",
+    "scruple-provider-claude-cli": "github:jaypeeZero/scruple-provider-claude-cli",
     "tsx": "^4.23.13",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0"
