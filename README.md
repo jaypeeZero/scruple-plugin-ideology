@@ -23,14 +23,29 @@ A Scruple plugin enforcing the engineering ideology below as semantic lint rules
 - [Error Handling](docs/ideologies/error-handling.md) - Let errors bubble up, handle at the top
 - [Outbound Call Resilience](docs/ideologies/outbound-call-resilience.md) - External failures are the normal path: bound every call, choose degradation deliberately
 
-## Install
+## Quick start with the Claude Code CLI
 
-```
-npm install --save-dev @scruple/cli @scruple/core @scruple/parser-oxc github:jaypeeZero/scruple-plugin-ideology#v0.3.0 github:jaypeeZero/scruple-provider-claude-cli
+The rules' thresholds are calibrated against Haiku 5.5 through [scruple-provider-claude-cli](https://github.com/jaypeeZero/scruple-provider-claude-cli), which answers each decision with `claude -p` using your logged-in Claude Code session. You don't need an API key.
+
+### Requirements
+
+- Node 22.18 or later.
+- `claude` is on `PATH` and logged in. `claude -p hi` should print a reply.
+
+### 1. Install
+
+From your repo root:
+
+```sh
+npm install --save-dev @scruple/cli @scruple/core @scruple/parser-oxc "github:jaypeeZero/scruple-plugin-ideology#semver:*" github:jaypeeZero/scruple-provider-claude-cli
 ```
 
-- The rules' thresholds are calibrated against Haiku 5.5 through [scruple-provider-claude-cli](https://github.com/jaypeeZero/scruple-provider-claude-cli).
-- `scruple-provider-claude-cli` answers through the logged-in `claude` CLI, so no API key is needed.
+- `#semver:*` resolves to this repo's newest release tag at install time. Your lockfile then pins that commit.
+- npm may warn `2 packages have install scripts not yet covered by allowScripts`. You can ignore this warning: both packages still install with their built `dist/`.
+
+### 2. Configure
+
+Create `scruple.config.ts` at your repo root, and set `include` to your source globs:
 
 ```ts
 // scruple.config.ts
@@ -66,10 +81,29 @@ export default defineConfig({
 })
 ```
 
+### 3. Run
+
+From your repo root:
+
+```sh
+npx scruple
+```
+
+```
+src/sample.ts
+  5:5       warning Let this error propagate, or recover so the surrounding code can continue. (93%)  ideology/no-swallowed-errors
+```
+
+- Exit code `0` means no `error` findings. Exit code `1` means at least one `error` finding. Exit code `2` means a configuration, parsing, or provider failure.
+- A `warn` rule never fails the run. To use a rule as a gate, set it to `'error'`.
+- Every rule decision is one `claude -p` call, and it counts against your Claude Code usage.
+- `npx scruple --help` lists the CLI options.
+- The provider's options, including `model` and `concurrency`, are documented in the [scruple-provider-claude-cli README](https://github.com/jaypeeZero/scruple-provider-claude-cli#options).
+
 ## Running against a repo without changing it
 
 - Scruple installs into a `.scruple/` folder at the target repo's root, holding its own `package.json`, `scruple.config.ts`, and `node_modules`.
-- `.scruple/package.json` lists the packages from [Install](#install) as `dependencies`.
+- `.scruple/package.json` lists the packages from [1. Install](#1-install) as `dependencies`.
 - `/.scruple/` goes in the target repo's `.git/info/exclude`, which git never commits, so `git status` stays clean.
 - The CLI scans the directory it runs in, so the same install scans the repo or any of its worktrees.
 
